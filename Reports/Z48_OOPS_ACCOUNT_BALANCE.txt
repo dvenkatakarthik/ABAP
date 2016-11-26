@@ -1,0 +1,50 @@
+*&---------------------------------------------------------------------*
+*& Report  Z48_OOPS_ACCOUNT_BALANCE
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z48_oops_account_balance.
+
+DATA: obj_act TYPE REF TO zcl_48_account_balance.
+CREATE OBJECT: obj_act.
+
+DATA: v_bal TYPE p DECIMALS 2.
+
+SELECTION-SCREEN BEGIN OF BLOCK a.
+PARAMETERS:  p_amnt TYPE dmbtr DEFAULT '1000',
+             p_dpst TYPE dmbtr,
+             p_wdrw TYPE dmbtr.
+SELECTION-SCREEN END OF BLOCK a.
+
+START-OF-SELECTION.
+  CALL METHOD obj_act->set_balance
+    EXPORTING
+      new_balance = p_amnt.
+  WRITE:/ 'Set balance:', p_amnt COLOR 7.
+
+
+  CALL METHOD obj_act->deposit
+    EXPORTING
+      amount      = p_dpst
+    RECEIVING
+      new_balance = v_bal.
+
+  WRITE:/ 'Deposited:', p_dpst ,'Rupees making balance to:', v_bal COLOR 5.
+
+
+  CALL METHOD obj_act->withdraw
+    EXPORTING
+      amount             = p_wdrw
+    RECEIVING
+      new_balance        = v_bal
+    EXCEPTIONS
+      insufficiant_funds = 1
+      OTHERS             = 2.
+  IF sy-subrc = 1.
+    MESSAGE e000(z48_abap) WITH 'Insufficiant funds'.
+  ELSE.
+    WRITE:/ 'Withdraw:', p_wdrw ,'Rupees making balance to:', v_bal COLOR 6.
+  ENDIF.

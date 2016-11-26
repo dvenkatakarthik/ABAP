@@ -1,0 +1,169 @@
+*&---------------------------------------------------------------------*
+*& Report  Z48_SELECT_QUERY
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z48_select_query.
+
+TYPES: BEGIN OF ty_mara,
+          matnr TYPE matnr,
+          mtart TYPE mtart,
+          ntgew TYPE ntgew,
+          mbrsh TYPE mbrsh,
+        END OF ty_mara.
+
+TYPES: BEGIN OF ty_final,
+          mandt TYPE mandt,
+          matnr TYPE matnr,
+          mtart TYPE mtart,
+          ntgew TYPE ntgew,
+          mbrsh TYPE mbrsh,
+          maktx TYPE maktx,
+        END OF ty_final.
+
+DATA: it_mara TYPE STANDARD TABLE OF ty_mara,
+*DATA: it_mara TYPE STANDARD TABLE OF mara,
+      wa_mara TYPE ty_mara.
+*      wa_mara TYPE mara.
+
+DATA: it_makt TYPE STANDARD TABLE OF makt,
+      wa_makt TYPE makt.
+
+DATA: it_final TYPE STANDARD TABLE OF ty_final,
+      wa_final TYPE ty_final.
+
+DATA: v_matnr TYPE matnr,
+      v_line TYPE i.
+
+SELECT-OPTIONS: s_matnr FOR v_matnr. "no intervals NO-EXTENSION.
+PARAMETERS: p_mtart TYPE mtart.
+
+*SELECT * FROM mara
+*  INTO TABLE ty_mara
+*  WHERE matnr IN s_matnr.
+*
+*IF sy-subrc = 0.
+*sort ty_mara by matnr.
+*describe table ty_mara lines v_line.
+*
+*write:'No of Records:', v_line color 5.
+*  LOOP AT ty_mara INTO wa_mara.
+*    WRITE:/ wa_mara-matnr, wa_mara-mtart, wa_mara-ntgew, wa_mara-mbrsh.
+*
+*  ENDLOOP.
+*ENDIF.
+
+*
+*SELECT matnr mtart ntgew mbrsh FROM mara
+*  INTO TABLE it_mara
+*  WHERE matnr IN s_matnr
+*    and mtart = p_mtart.
+*
+*IF sy-subrc = 0.
+*sort it_mara by matnr.
+*describe table it_mara lines v_line.
+*
+*write:'No of Records:', v_line color 5.
+*  LOOP AT it_mara INTO wa_mara.
+*    WRITE:/ wa_mara-matnr, wa_mara-mtart, wa_mara-ntgew, wa_mara-mbrsh.
+*
+*  ENDLOOP.
+*ENDIF.
+
+*SELECT matnr mtart ntgew mbrsh FROM mara
+*  INTO wa_mara
+*  WHERE matnr IN s_matnr
+*    AND mtart = p_mtart.
+*
+*  APPEND wa_mara TO it_mara.
+*ENDSELECT.
+*
+*LOOP AT it_mara INTO wa_mara.
+*  WRITE:/ wa_mara-matnr, wa_mara-mtart, wa_mara-ntgew, wa_mara-mbrsh.
+*
+*ENDLOOP.
+*&---------------------------------------------------------------------*
+*& **** SELECT SINGLE VALUES FROM MARA
+*&---------------------------------------------------------------------*
+*select single matnr mtart ntgew mbrsh FROM mara
+*  INTO wa_mara
+*  WHERE matnr IN s_matnr.
+*  WRITE:/ wa_mara-matnr, wa_mara-mtart, wa_mara-ntgew, wa_mara-mbrsh.
+
+*&---------------------------------------------------------------------*
+*& **** SELECT SINGLE VALUES FROM MARA.
+*& **** DIFFERENT OPTION IN INTERNAL TABLES
+*&---------------------------------------------------------------------*
+
+SELECT matnr
+       mtart
+       ntgew
+       mbrsh FROM mara
+  INTO TABLE it_mara
+  WHERE matnr IN s_matnr.
+
+IF sy-subrc = 0.
+
+  SELECT * FROM makt INTO TABLE it_makt
+    WHERE matnr IN s_matnr
+      AND spras = 'EN'.
+
+  IF sy-subrc = 0.
+
+    DESCRIBE TABLE it_mara LINES v_line.
+    WRITE:/ 'No of line in MARA', v_line COLOR 5.
+
+    CLEAR: v_line.
+    DESCRIBE TABLE it_makt LINES v_line.
+    WRITE:/ 'No of line in MAKT', v_line COLOR 6.
+
+    ULINE.
+
+    LOOP AT it_mara INTO wa_mara.
+      MOVE-CORRESPONDING wa_mara TO wa_final.
+
+      READ TABLE it_makt INTO wa_makt WITH KEY matnr = wa_mara-matnr.
+      IF sy-subrc = 0.
+        MOVE-CORRESPONDING wa_makt TO wa_final.
+      ENDIF.
+
+      IF wa_final-ntgew = '0.000'.
+        wa_final-ntgew = '10.123'.
+      ENDIF.
+      IF wa_final-maktx = space.
+        wa_final-maktx = 'ABAP 46 BATCH'.
+      ENDIF.
+
+      APPEND wa_final TO it_final.
+      CLEAR: wa_mara,wa_makt,wa_final.
+
+    ENDLOOP.
+  ENDIF.
+ENDIF.
+
+WRITE:/1 'Material No' COLOR 1, 25 'Mat Text' COLOR 7, 70 'Type' COLOR
+ 3, 63 'Indsec' COLOR 5 , 80'Net wt' COLOR 6.
+
+MODIFY z48_material FROM TABLE it_final.
+commit work.
+
+WRITE:/ sy-uline.
+LOOP AT it_final INTO wa_final.
+
+  WRITE:/ wa_final-matnr, sy-vline, wa_final-maktx,sy-vline,
+wa_final-mtart,sy-vline, wa_final-mbrsh,sy-vline, wa_final-ntgew,
+sy-vline.
+
+    MODIFY Z48_MATERIAL FROM wa_final.
+
+ENDLOOP.
+
+DELETE z48_material FROM TABLE it_final.
+DELETE FROM z48_material WHERE
+      maktx = space.
+
+commit work.
+rollback work.

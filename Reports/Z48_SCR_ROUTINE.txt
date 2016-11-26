@@ -1,0 +1,36 @@
+*&---------------------------------------------------------------------*
+*& Report  Z48_SCR_ROUTINE
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z48_scr_routine.
+
+DATA: v_sdate TYPE edatu.
+
+*&---------------------------------------------------------------------*
+*&      Form  SCHEDULE
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->IN_TAB     text
+*      -->OUT_TAB    text
+*----------------------------------------------------------------------*
+FORM schedule TABLES in_tab STRUCTURE itcsy
+                     out_tab STRUCTURE itcsy.
+
+  READ TABLE in_tab WITH KEY name = 'LW_VBAP-VBELN'.
+
+  IF  sy-subrc EQ 0.
+
+    SELECT SINGLE edatu FROM vbep INTO v_sdate
+                 WHERE vbeln = in_tab-value.
+  ENDIF.
+
+  READ TABLE out_tab WITH KEY name = 'V_SDATE'.
+  out_tab-value = v_sdate.
+
+  MODIFY out_tab INDEX sy-tabix.
+ENDFORM.                    "SCHEDULE

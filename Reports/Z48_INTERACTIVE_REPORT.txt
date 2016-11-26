@@ -1,0 +1,154 @@
+*&---------------------------------------------------------------------*
+*& Report  Z48_INTERACTIVE_REPORT
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z48_interactive_report LINE-COUNT 50(3)
+                               LINE-SIZE 72
+                               NO STANDARD PAGE HEADING
+                               MESSAGE-ID z48_abap.
+
+DATA: it_ekko TYPE STANDARD TABLE OF ekko,
+      wa_ekko TYPE ekko,
+      it_ekpo TYPE STANDARD TABLE OF ekpo,
+      wa_ekpo TYPE ekpo,
+      it_eket TYPE STANDARD TABLE OF eket,
+      wa_eket TYPE eket.
+
+DATA: v_lsind TYPE sy-lsind,
+      v_ebeln TYPE char10.
+
+SELECT-OPTIONS: s_ebeln FOR wa_ekko-ebeln.
+
+START-OF-SELECTION.
+
+  SELECT * FROM ekko
+    INTO TABLE it_ekko
+    WHERE ebeln IN s_ebeln
+      AND bstyp = 'F'.
+
+  SET PF-STATUS 'ABAP48'.
+
+TOP-OF-PAGE.
+  WRITE:/ 'PO Header Details on Basic List' COLOR 3,
+    / 'Page No:', sy-pagno COLOR 6.
+  ULINE.
+
+END-OF-SELECTION.
+
+  IF it_ekko IS NOT INITIAL.
+
+    LOOP AT it_ekko INTO wa_ekko.
+
+      WRITE:/ wa_ekko-ebeln, sy-vline,wa_ekko-bukrs,sy-vline,
+      wa_ekko-ekorg,sy-vline,wa_ekko-ekgrp,sy-vline,wa_ekko-lifnr,sy-vline.
+
+      HIDE wa_ekko-ebeln.
+
+    ENDLOOP.
+    ULINE.
+  ENDIF.
+
+
+**&---------------------------------------------------------------------
+*
+**&    AT LINE-SELECTION.
+**&---------------------------------------------------------------------
+*
+*AT LINE-SELECTION.
+*
+*  v_lsind = sy-lsind.
+*
+*  CASE v_lsind.
+*    WHEN 1.
+*      PERFORM second_first_list.
+*
+*    WHEN 2.
+*      PERFORM second_second_list.
+*
+*    WHEN 3.
+*  ENDCASE.
+*&---------------------------------------------------------------------*
+*&    AT USER-COMMAND.
+*&---------------------------------------------------------------------*
+AT USER-COMMAND.
+  CASE sy-ucomm.
+    WHEN 'LIST'.
+      IF sy-lsind = 1.
+        PERFORM second_first_list.
+      ELSEIF sy-lsind = 2.
+        PERFORM second_second_list.
+      ENDIF.
+
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+    WHEN OTHERS.
+  ENDCASE.
+
+
+*&---------------------------------------------------------------------*
+*&      Form  SECOND_FIRST_LIST
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM second_first_list .
+
+  SELECT * FROM ekpo
+      INTO TABLE it_ekpo
+      WHERE ebeln = wa_ekko-ebeln.
+
+  IF sy-subrc = 0.
+    LOOP AT it_ekpo INTO wa_ekpo.
+
+      WRITE:/ wa_ekpo-ebeln, sy-vline,wa_ekpo-ebelp,sy-vline,
+      wa_ekpo-matnr,sy-vline,wa_ekpo-werks,sy-vline,wa_ekpo-ntgew.
+
+      HIDE wa_ekpo-ebelp.
+
+    ENDLOOP.
+
+  ENDIF.
+
+ENDFORM.                    " SECOND_FIRST_LIST
+*&---------------------------------------------------------------------*
+*&      Form  SECOND_SECOND_LIST
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM second_second_list .
+  SELECT * FROM eket
+      INTO TABLE it_eket
+      WHERE ebeln = wa_ekko-ebeln
+        AND ebelp = wa_ekpo-ebelp.
+
+  IF sy-subrc = 0.
+    LOOP AT it_eket INTO wa_eket.
+
+      WRITE:/ wa_eket-ebeln, sy-vline,wa_eket-ebelp,sy-vline,
+      wa_eket-etenr,sy-vline,wa_eket-eindt,sy-vline,wa_eket-menge.
+    ENDLOOP.
+  ENDIF.
+
+ENDFORM.                    " SECOND_SECOND_LIST
+
+*&---------------------------------------------------------------------*
+*&    TOP-OF-PAGE DURING LINE-SELECTION
+*&---------------------------------------------------------------------*
+TOP-OF-PAGE DURING LINE-SELECTION.
+  v_lsind = sy-lsind.
+
+  CASE v_lsind.
+    WHEN 1.
+      WRITE:/ 'PO Item Details on Second First List' COLOR 6.
+    WHEN 2.
+      WRITE:/ 'PO Schedule Details on Second Second List' COLOR 7.
+  ENDCASE.

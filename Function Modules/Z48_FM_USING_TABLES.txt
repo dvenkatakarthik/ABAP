@@ -1,0 +1,21 @@
+FUNCTION z48_fm_using_tables.
+*"----------------------------------------------------------------------
+*"*"Local Interface:
+*"  IMPORTING
+*"     REFERENCE(I_KUNNR_LOW) TYPE  KUNNR
+*"     REFERENCE(I_KUNNR_HIGH) TYPE  KUNNR
+*"  TABLES
+*"      IF_KNA1 STRUCTURE  KNA1
+*"  EXCEPTIONS
+*"      KUNNR_INVALID
+*"----------------------------------------------------------------------
+  SELECT * FROM kna1
+    INTO TABLE if_kna1
+     WHERE kunnr BETWEEN i_kunnr_low AND i_kunnr_high.
+
+  IF sy-subrc NE 0.
+    RAISE kunnr_invalid.
+  ENDIF.
+
+
+ENDFUNCTION.

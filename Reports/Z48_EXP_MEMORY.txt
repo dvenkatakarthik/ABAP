@@ -1,0 +1,38 @@
+*&---------------------------------------------------------------------*
+*& Report  Z48_EXP_MEMORY
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z48_exp_memory.
+
+*
+*DATA: v_matnr TYPE matnr.
+*
+*PARAMETERS: p_matnr TYPE matnr.
+*
+*SELECT SINGLE matnr FROM mara
+*  INTO v_matnr
+*  WHERE matnr = p_matnr.
+*
+*IF  sy-subrc = 0.
+*  SET PARAMETER ID 'SAP_MEMORY' FIELD v_matnr.
+*  WRITE:/ 'SET MEMORY IS:', v_matnr.
+*ENDIF.
+
+
+DATA: it_mara_exp TYPE TABLE OF mara.
+
+SELECT * FROM mara INTO TABLE it_mara_exp
+  UP TO 100 ROWS.
+
+EXPORT it_mara_exp TO MEMORY ID 'ABAP_MEMORY'.
+
+WRITE:/ 'Memory set'.
+
+SUBMIT z48_imp_memory AND RETURN.
+
+FREE MEMORY ID 'SAP_MEMORY'.
+FREE MEMORY ID 'ABAP_MEMORY'.

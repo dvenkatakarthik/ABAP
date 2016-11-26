@@ -1,0 +1,33 @@
+*&---------------------------------------------------------------------*
+*& Report  Z48_OOPS_INTERFACE_VENDOR
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z48_oops_interface_vendor.
+
+DATA: i_lfa1 TYPE TABLE OF lfa1,
+      w_lfa1 TYPE lfa1.
+
+SELECT-OPTIONS: s_lifnr FOR w_lfa1-lifnr.
+
+START-OF-SELECTION.
+
+                                                                   .
+  DATA: obj TYPE REF TO zcl_48_interface_vendor.
+  CREATE OBJECT obj.
+*
+**  CALL METHOD obj->zif_48_interface_vendor~select_data
+*  CALL METHOD obj->select_data
+*    EXPORTING
+*      l_lifnr =  s_lifnr-low
+*      h_lifnr =  s_lifnr-high
+**    IMPORTING
+**      wa_lfa1 =
+ .
+   call method obj->select_data
+    EXPORTING
+      l_lifnr =  s_lifnr-low
+      h_lifnr =  s_lifnr-high.

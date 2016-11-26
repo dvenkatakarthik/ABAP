@@ -1,0 +1,43 @@
+*&---------------------------------------------------------------------*
+*& Report  Z48_OOPS_SUPERCLASS
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z48_oops_superclass NO STANDARD PAGE HEADING
+                           LINE-COUNT 30
+                           LINE-SIZE 72.
+
+DATA: wa_kna1 TYPE zcl_kna1.
+
+PARAMETERS: p_kunnr TYPE kunnr.
+
+TOP-OF-PAGE.
+  ULINE.
+  WRITE:/'Page No', sy-pagno COLOR 5.
+  ULINE.
+
+START-OF-SELECTION.
+
+  DATA: obj_super TYPE REF TO zcl_48_superclass.
+  DATA: obj_sub   TYPE REF TO zcl_48_subclass.
+
+  CREATE OBJECT obj_sub.
+  CREATE OBJECT obj_super.
+
+  CALL METHOD obj_super->select_method
+    EXPORTING
+      p_kunnr = p_kunnr
+    IMPORTING
+      wa_kna1 = wa_kna1.
+
+  WRITE:/ wa_kna1-kunnr,wa_kna1-land1,wa_kna1-name1,wa_kna1-ort01.
+  ULINE.
+
+  CALL METHOD obj_sub-> select_method
+    EXPORTING
+      p_kunnr = p_kunnr
+    IMPORTING
+      wa_kna1 = wa_kna1.

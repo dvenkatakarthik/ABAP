@@ -1,0 +1,61 @@
+*&---------------------------------------------------------------------*
+*& Report  Z48_OOPS_DEMO
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z48_oops_demo.
+
+*----------------------------------------------------------------------*
+*       CLASS abap DEFINITION
+*----------------------------------------------------------------------*
+*
+*----------------------------------------------------------------------*
+CLASS abap DEFINITION.
+  PUBLIC SECTION.
+    CLASS-DATA: a TYPE i VALUE 10,
+                b TYPE i VALUE 20,
+                c TYPE i.
+    METHODS: add.
+
+    CLASS-METHODS: sub.
+
+ENDCLASS.                    "abap DEFINITION
+
+
+*----------------------------------------------------------------------*
+*       CLASS abap IMPLEMENTATION
+*----------------------------------------------------------------------*
+*
+*----------------------------------------------------------------------*
+CLASS abap IMPLEMENTATION.
+  METHOD: add.
+    c = a + b.
+    WRITE:/'Value of C',c COLOR 6.
+  ENDMETHOD.                    "abap
+
+
+  METHOD: sub.
+    c = a - b.
+    WRITE:/'Value of C', c COLOR 6..
+  ENDMETHOD.                    "sub
+
+ENDCLASS.                    "abap IMPLEMENTATION
+
+START-OF-SELECTION.
+
+  DATA:obj TYPE REF TO abap.
+  CREATE OBJECT obj.
+
+  CALL METHOD obj->add.
+*  CALL METHOD abap=>add.
+
+*  CALL METHOD obj->sub.
+  CALL METHOD abap=>sub.
+
+  DATA:obj2 TYPE REF TO abap.
+  CREATE OBJECT obj2.
+
+  CALL METHOD obj2->add.

@@ -1,0 +1,21 @@
+*&---------------------------------------------------------------------*
+*& Report  Z48_DEMO_TR
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z48_demo_tr.
+
+WRITE:/ 'Conversion of Local objet to Package' COLOR 5.
+ULINE.
+
+WRITE:/ 'Version V2 created by user 5' COLOR 6.
+ULINE.
+
+WRITE:/ 'Version V3 with new TR created by user 5' COLOR 6.
+ULINE.
+
+WRITE:/ 'Version V3 with new TR-Task created by user 1' COLOR 3.
+ULINE.

@@ -1,0 +1,105 @@
+*&---------------------------------------------------------------------*
+*& Report  Z48_STRINGS
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z48_strings NO STANDARD PAGE HEADING.
+
+DATA: text1 TYPE string,
+      text2 TYPE string,
+      text3 TYPE string,
+      text4 TYPE string,
+      text  TYPE string.
+
+text1 = '   RELIANCE'.
+text2 = 'GLOBAL'.
+text3 = 'CHENNAI'.
+
+ULINE.
+**CONCATENATE
+CONCATENATE text1 text2  text3 INTO text SEPARATED BY space.
+
+WRITE:/ 'AFTER CONCATENATE:', text COLOR 5.
+CLEAR: text1,text2,text3.
+ULINE.
+
+****SPLIT
+SPLIT text AT 'E' INTO text1 text2 text3 TEXT4.
+
+WRITE:/ 'SPLIT:', / text1, / text2, / text3, / text4.
+ULINE.
+
+**TRANSALATE
+
+translate text to lower case.
+
+write:/ 'TRANSLATE:', text.
+uline.
+
+**CONDENSE
+*
+*condense text no-gaps .
+*write:/ 'CONDENSE:', text color 3.
+*uline.
+
+**STR LENGTH
+
+data: num type i.
+
+num = strlen( text ).
+
+write:/ 'STRLEN:', num color 4.
+
+clear: num.
+uline.
+
+
+****SHIFT
+
+SHIFT text BY 3 PLACES LEFT.
+WRITE:/ 'SHIFT:', text.
+
+*SHIFT text BY 3 PLACES RIGHT.
+*WRITE:/ 'SHIFT:', text.
+
+*SHIFT  text BY 3 PLACES CIRCULAR.
+*WRITE:/ 'SHIFT:', text.
+
+uline.
+
+***REPLACE
+clear: text1,text2,text.
+
+text1 = 'RELIANCE'.
+text2 = 'GLOBAL'.
+concatenate text1 text2 into text separated by space.
+replace text2 with text1 into text.
+
+
+
+write:/ 'REPLACE:', text color 4 .
+uline.
+skip.
+
+**OFFSET
+
+data: day(2) type c,
+      month type char2,
+      year(4) type c.
+
+day = sy-datum+6(2).
+month = sy-datum+4(2).
+year = sy-datum+0(4).
+
+write:/ 'DATE:',sy-datum .
+write:/ 'DAY:', day.
+write:/ 'MONTH:', month.
+write:/ 'YEAR:', year.
+
+uline.
+
+skip 2.
+write:/ 'THE END'.

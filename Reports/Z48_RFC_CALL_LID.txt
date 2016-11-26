@@ -1,0 +1,31 @@
+*&---------------------------------------------------------------------*
+*& Report  Z48_RFC_CALL_LID
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z48_rfc_call_lid.
+
+DATA: it_kna1 TYPE STANDARD TABLE OF kna1,
+      wa_kna1 TYPE kna1.
+
+SELECT-OPTIONS: s_kunnr FOR wa_kna1-kunnr.
+
+
+START-OF-SELECTION.
+
+  CALL FUNCTION 'ZCHENNAI_RFC_DEMO' DESTINATION 'Z48_E01_LID'
+    EXPORTING
+      il_kunnr  = s_kunnr-low
+      ih_kunnr  = s_kunnr-high
+    TABLES
+      it_kna1   = it_kna1
+    EXCEPTIONS
+      not_found = 1
+      OTHERS    = 2.
+
+  LOOP AT it_kna1 INTO wa_kna1.
+    WRITE:/ wa_kna1-kunnr,wa_kna1-land1,wa_kna1-ort01,wa_kna1-name1.
+  ENDLOOP.

@@ -1,0 +1,70 @@
+*&---------------------------------------------------------------------*
+*& Module Pool       Z48_TAB_STRIPS
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+PROGRAM  z48_tab_strips.
+
+TABLES: kna1,vbak.
+
+DATA: wa_kna1 TYPE kna1,
+      wa_vbak TYPE vbak.
+
+*** Declaration of Tabstrip Control
+CONTROLS: tsc TYPE TABSTRIP.
+
+DATA: ok_code TYPE sy-ucomm.
+
+*&---------------------------------------------------------------------*
+*&      Module  STATUS_0100  OUTPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'TAB_STRIP'.
+*  SET TITLEBAR 'xxx'.
+
+ENDMODULE.                 " STATUS_0100  OUTPUT
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+  CASE ok_code.
+
+    WHEN 'CUST'.
+      tsc-activetab = 'CUST'.
+
+***     Fetch data from LFA1 table
+      SELECT SINGLE * FROM kna1 INTO wa_kna1
+      WHERE kunnr = kna1-kunnr.
+
+    WHEN 'SO'.
+      tsc-activetab = 'SO'.
+*     Fetch data from EKKO table
+      SELECT SINGLE * FROM vbak INTO wa_vbak
+      WHERE kunnr = kna1-kunnr.
+
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+
+  ENDCASE.
+ENDMODULE.                 " USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*&      Module  FILL_CUSTOMER  OUTPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+module FILL_CUSTOMER output.
+
+  kna1-land1  = wa_kna1-land1.
+  kna1-name1  = wa_kna1-name1.
+  kna1-ort01  = wa_kna1-ort01.
+  kna1-pstlz  = wa_kna1-pstlz.
+  kna1-telf1  = wa_kna1-telf1.
+
+endmodule.                 " FILL_CUSTOMER  OUTPUT

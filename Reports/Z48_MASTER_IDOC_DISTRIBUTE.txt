@@ -1,0 +1,117 @@
+*&---------------------------------------------------------------------*
+*& Report  Z48_MASTER_IDOC_DISTRIBUTE
+*&
+*&---------------------------------------------------------------------*
+*    O U T   B O U N D  S E T T I N G S
+*&---------------------------------------------------------------------*
+** Transaction Codes :
+*   SALE - ALE (Application Linking and Enabling) settings
+*   SM59 - RFC Destination (type: 3)
+*   WE31- Segment Creation
+*   WE30 - IDOC structure
+*   WE81 - Message type creation
+*   WE82 - Link between Message type and IDOC type.
+*   WE21 - Creation of POrt
+*   WE20 - Outbound Partner Profile creation
+*   WE19 - Test tool for IDOC Processing.
+*   BD64 - Distribution Model.
+*&---------------------------------------------------------------------*
+*   If the IDOC status is 03
+*   Execute the program RBDMOIND.
+*   IDOC status will change to 12 indicating successful posting of
+*   Application document.
+*&---------------------------------------------------------------------*
+*   If IDOC status is 30.
+*   Execute program RSEOUT00.
+*   Mention the idoc number.
+*   IDOC status will change to 03, indicating IDOC passed to application
+*   and posted successfully.
+*&---------------------------------------------------------------------*
+*   The ABAP RSNAST00 is the standard routine to send IDocs from entries
+*   in the message control.This program can be called directly, while
+*having the structure NAST correctly filled with all necessary informat.
+*&---------------------------------------------------------------------*
+* If there is an entry in table NAST, RSNAST00 looks up the associated
+* processing routine in table TNAPR.If it is to send an IDoc with stnd
+* means, this will usually be the routine RSNASTED(EDI_PROCESSING) or
+* RSNASTED(ALE_PROCESSING) in the case of ALE distribution.
+*&---------------------------------------------------------------------*
+* RSNASTED itself determines the associated IDoc outbound function
+* module, executes it to fill the EDIDx tables and passes the prepared
+* IDoc to the port.
+*&---------------------------------------------------------------------*
+
+REPORT  z48_master_idoc_distribute.
+
+TYPES : BEGIN OF ty_mara,
+          matnr TYPE matnr,
+          mtart TYPE mtart,
+          mbrsh TYPE mbrsh,
+          ntgew TYPE ntgew,
+        END OF ty_mara.
+
+DATA: wa_mara TYPE ty_mara,
+      it_mara TYPE TABLE OF ty_mara.
+
+SELECT-OPTIONS: so_matnr FOR wa_mara-matnr.
+
+DATA: it_edidc TYPE TABLE OF edidc,
+      wa_edidc TYPE edidc,
+      it_edidd TYPE TABLE OF edidd,
+      wa_edidd TYPE edidd,
+      wa_zmat TYPE z48_st.
+
+START-OF-SELECTION.
+
+  SELECT matnr mtart mbrsh ntgew
+                        FROM mara
+                INTO TABLE it_mara
+            WHERE matnr IN so_matnr.
+
+  IF NOT it_mara[] IS INITIAL.
+
+    wa_edidc-direct = 1.           " Outbound
+    wa_edidc-rcvprn = 'SAPLID'.    " Receiver Logical Sysytem
+    wa_edidc-rcvprt = 'LS'.        " Logical sysytem
+    wa_edidc-rcvpor = 'Z48_PORT'.  " Port
+    wa_edidc-mestyp = 'Z48_MT'.    " Message Type
+    wa_edidc-idoctp = 'Z48_BT'.    " Idoc Type
+
+    LOOP AT it_mara INTO wa_mara.
+
+      MOVE : wa_mara-matnr TO wa_zmat-matnr,
+             wa_mara-mtart TO wa_zmat-mtart,
+             wa_mara-mbrsh TO wa_zmat-mbrsh,
+             wa_mara-ntgew TO wa_zmat-ntgew.
+
+      MOVE : 'Z48_ST' TO wa_edidd-segnam, " SEGMENT TYPE
+             wa_zmat TO wa_edidd-sdata.   "Application data
+
+      APPEND wa_edidd TO it_edidd.
+      CLEAR : wa_edidd, wa_zmat.
+
+    ENDLOOP.
+
+  ENDIF.
+
+  CALL FUNCTION 'MASTER_IDOC_DISTRIBUTE'
+    EXPORTING
+      master_idoc_control                  = wa_edidc
+*     OBJ_TYPE                             = ''
+*     CHNUM                                = ''
+    TABLES
+      communication_idoc_control           = it_edidc
+      master_idoc_data                     = it_edidd
+   EXCEPTIONS
+     error_in_idoc_control                = 1
+     error_writing_idoc_status            = 2
+     error_in_idoc_data                   = 3
+     sending_logical_system_unknown       = 4
+     OTHERS                               = 5
+            .
+  IF sy-subrc = 0.
+    READ TABLE it_edidc INTO wa_edidc INDEX 1.
+    IF sy-subrc EQ 0.
+      WRITE:/10 'Idoc No:',wa_edidc-docnum COLOR 5. " IDOC NO
+    ENDIF.
+  ENDIF.

@@ -1,0 +1,203 @@
+*& Report  Z48_INTERNAL_TABLES
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z48_internal_tables.
+
+TYPES:  BEGIN OF ty_mat,
+          matnr TYPE matnr,
+          werks TYPE werks_d,
+          mtart TYPE mtart,
+          ntgew TYPE ntgew,
+          erdat TYPE erdat,
+         END OF ty_mat.
+
+TYPES:  BEGIN OF ty_text,
+          matnr TYPE matnr,
+          maktx TYPE maktx,
+         END OF ty_text.
+
+DATA: it_mat TYPE STANDARD TABLE OF ty_mat,
+      wa_mat TYPE ty_mat,
+      wa_mat2 TYPE ty_mat,
+      it_text TYPE STANDARD TABLE OF ty_text,
+      wa_text TYPE ty_text.
+
+DATA: v_line TYPE i.
+
+
+wa_mat-matnr  = 'MAT-01'.
+wa_mat-werks  = '1000'.
+wa_mat-mtart  = 'FERT'.
+wa_mat-ntgew  = '11.12'.
+wa_mat-erdat  = '20120115'.
+APPEND wa_mat TO it_mat.
+CLEAR wa_mat.
+
+wa_mat-matnr  = 'MAT-02'.
+wa_mat-werks  = '1100'.
+wa_mat-mtart  = 'FERT'.
+wa_mat-ntgew  = '13.12'.
+wa_mat-erdat  = '20120116'.
+APPEND wa_mat TO it_mat.
+CLEAR wa_mat.
+
+wa_mat-matnr  = 'MAT-03'.
+wa_mat-werks  = '1200'.
+wa_mat-mtart  = 'HALB'.
+wa_mat-erdat  = '20120117'.
+APPEND wa_mat TO it_mat.
+CLEAR wa_mat.
+*refresh: it_mat.
+*free it_mat.
+
+wa_mat-matnr  = 'MAT-04'.
+wa_mat-werks  = '1400'.
+wa_mat-mtart  = 'HALB'.
+wa_mat-ntgew  = '543.162'.
+wa_mat-erdat  = '20120119'.
+APPEND wa_mat TO it_mat.
+CLEAR wa_mat.
+
+wa_mat-matnr  = 'MAT-04'.
+wa_mat-werks  = '1300'.
+wa_mat-mtart  = 'FERT'.
+wa_mat-ntgew  = '343.162'.
+wa_mat-erdat  = '20120118'.
+INSERT wa_mat INTO it_mat INDEX 2.
+MODIFY it_mat FROM wa_mat INDEX 4 TRANSPORTING ntgew.
+CLEAR wa_mat.
+
+
+wa_mat-matnr  = 'MAT-04'.
+wa_mat-werks  = '1700'.
+wa_mat-mtart  = 'ROH'.
+wa_mat-ntgew  = '30.12'.
+wa_mat-erdat  = '20120120'.
+APPEND wa_mat TO it_mat.
+CLEAR wa_mat.
+
+
+wa_text-matnr  = 'MAT-02'.
+wa_text-maktx  = 'MATERIAL 2 WITH FERT'.
+APPEND wa_text TO it_text.
+CLEAR wa_text.
+
+wa_text-matnr  = 'MAT-03'.
+wa_text-maktx  = 'MATERIAL 3 WITH HALB'.
+APPEND wa_text TO it_text.
+CLEAR wa_text.
+
+
+**
+SORT it_mat BY matnr ASCENDING.
+**SORT it_mat BY matnr ASCENDING erdat DESCENDING." ntgew ASCENDING.
+****SORT it_mat BY erdat DESCENDING.
+***
+***LOOP AT it_mat INTO wa_mat  WHERE MATNR = 'MAT-04' AND MTART = 'ROH'.
+***  WRITE:/ wa_mat-matnr ,wa_mat-werks,wa_mat-mtart,wa_mat-ntgew,wa_mat-erdat COLOR 2.
+***ENDLOOP.
+**
+**DESCRIBE TABLE it_mat LINES v_line.
+**WRITE:/ 'BEFORE DELETE NO OF RECORDS IN MAT:', v_line COLOR 5.
+**
+***DELETE it_mat WHERE matnr = 'MAT-04'.
+***
+***DELETE ADJACENT DUPLICATES FROM it_mat COMPARING MATNR.
+***
+***LOOP AT it_mat INTO wa_mat WHERE MATNR = '4' AND MTART = 'ROH'.
+***  WRITE:/ wa_mat-matnr ,wa_mat-werks,wa_mat-mtart,wa_mat-ntgew,wa_mat-erdat COLOR 6.
+***ENDLOOP.
+**
+***DESCRIBE TABLE it_mat LINES v_line.
+***WRITE:/ 'AFTER DELETE NO OF RECORDS IN MAT:', v_line COLOR 5.
+***
+READ TABLE it_mat INTO wa_mat INDEX 1.
+WRITE:/ wa_mat-matnr ,wa_mat-werks,wa_mat-mtart,wa_mat-ntgew,wa_mat-erdat COLOR 6.
+skip.
+*READ TABLE it_mat INTO wa_mat WITH KEY matnr = '4' mtart = 'HALB'.
+*IF sy-subrc = 0.
+*  WRITE:/ wa_mat-matnr ,wa_mat-werks,wa_mat-mtart,wa_mat-ntgew,wa_mat-erdat COLOR 6.
+*ENDIF.
+
+**
+**
+LOOP AT it_mat INTO wa_mat.
+  WRITE:/ wa_mat-matnr ,wa_mat-werks,wa_mat-mtart,wa_mat-ntgew,wa_mat-erdat COLOR 6.
+
+  READ TABLE it_text INTO wa_text WITH KEY matnr = wa_text-matnr.
+  IF sy-subrc = 0.
+    WRITE:/ wa_text-matnr ,wa_text-maktx.
+    SKIP.
+  ENDIF.
+ENDLOOP.
+**
+***LOOP AT it_mat INTO wa_mat WHERE matnr = 'MAT-02'.
+***
+***  READ TABLE it_mat INTO wa_mat2 WITH KEY matnr = wa_mat-matnr.
+***  IF sy-subrc = 0.
+***    wa_mat2-matnr  = 'MAT-04'.
+***    wa_mat2-werks  = '2700'.
+***    wa_mat2-mtart  = 'HALB'.
+***    wa_mat2-ntgew  = '300.12'.
+***    wa_mat2-erdat  = '20120121'.
+***
+***    MODIFY it_mat FROM wa_mat2 INDEX sy-tabix TRANSPORTING matnr werks mtart erdat.
+***    WRITE:/ wa_mat2-matnr ,wa_mat2-werks,wa_mat2-mtart,wa_mat2-ntgew,wa_mat2-erdat COLOR 6.
+***  ENDIF.
+***ENDLOOP.
+
+
+***** WITH HEADER LINE
+*DATA: a TYPE i.
+*
+*
+*DATA:  BEGIN OF it_mat OCCURS 0,
+*          matnr TYPE matnr,
+*          werks TYPE werks_d,
+*          mtart TYPE mtart,
+*          ntgew TYPE ntgew,
+*         END OF it_mat.
+*
+*
+*it_mat-matnr  = '1'.
+*it_mat-werks  = '1000'.
+*it_mat-mtart  = 'FERT'.
+*it_mat-ntgew  = '11.12'.
+*APPEND it_mat.
+*CLEAR it_mat.
+*
+*it_mat-matnr  = '2'.
+*it_mat-werks  = '1100'.
+*it_mat-mtart  = 'FERT'.
+*it_mat-ntgew  = '13.12'.
+*APPEND it_mat.
+*CLEAR it_mat[].
+*
+*
+*it_mat-matnr  = '3'.
+*it_mat-werks  = '1200'.
+*it_mat-mtart  = 'HALB'.
+*it_mat-ntgew  = '133.152'.
+*APPEND it_mat.
+*CLEAR it_mat.
+*
+*
+*
+*it_mat-matnr  = '4'.
+*it_mat-werks  = '1300'.
+*it_mat-mtart  = 'FERT'.
+*it_mat-ntgew  = '343.162'.
+*APPEND it_mat.
+*CLEAR it_mat.
+*
+*
+*
+*SORT it_mat BY matnr DESCENDING.
+*
+*LOOP AT it_mat.
+*  WRITE:/ it_mat-matnr ,it_mat-werks,it_mat-mtart,it_mat-ntgew.
+*ENDLOOP.

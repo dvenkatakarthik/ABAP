@@ -1,0 +1,108 @@
+*&---------------------------------------------------------------------*
+*& Report  ZPMDC_UPLOAD_AL11
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  zpmdc_upload_al11.
+
+TYPES: BEGIN OF tw_mara,
+        matnr TYPE char18,"matnr,         "Material Number
+        mtart TYPE char4,"mtart,         "Material Type
+        meins TYPE char2,"meins,         "Base Unit of Measure
+        ntgew TYPE char15,"ntgew,         "Netwt
+       END OF tw_mara.
+
+DATA: it_mara TYPE TABLE OF tw_mara,
+      wa_mara TYPE tw_mara.
+
+DATA: v_file TYPE string.
+
+*&---------------------------------------------------------------------*
+*&                     SELECTION-SCREEN
+*&---------------------------------------------------------------------*
+SELECTION-SCREEN BEGIN OF BLOCK bk1 WITH FRAME TITLE text-001.
+PARAMETERS : pa_fname TYPE localfile. "rlgrap-filename.
+*SELECT-OPTIONS: s_matnr FOR wa_mara-matnr.
+SELECTION-SCREEN END OF BLOCK bk1.
+*&---------------------------------------------------------------------*
+*&                             AT SELECTION SCREEN
+*&---------------------------------------------------------------------*
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR pa_fname.
+** F4 functionality for File Name
+  CALL FUNCTION 'F4_FILENAME'
+    EXPORTING
+      program_name  = sy-repid
+      dynpro_number = sy-dynnr
+      field_name    = ' '
+    IMPORTING
+      file_name     = pa_fname.
+
+START-OF-SELECTION.
+  v_file = pa_fname.
+
+  CALL FUNCTION 'GUI_UPLOAD'
+    EXPORTING
+      filename                      = v_file
+     filetype                      = 'ASC'
+     has_field_separator           = 'X'
+*   HEADER_LENGTH                 = 0
+*   READ_BY_LINE                  = 'X'
+*   DAT_MODE                      = ' '
+*   CODEPAGE                      = ' '
+*   IGNORE_CERR                   = ABAP_TRUE
+*   REPLACEMENT                   = '#'
+*   CHECK_BOM                     = ' '
+*   VIRUS_SCAN_PROFILE            =
+*   NO_AUTH_CHECK                 = ' '
+* IMPORTING
+*   FILELENGTH                    =
+*   HEADER                        =
+    TABLES
+      data_tab                      = it_mara
+   EXCEPTIONS
+     file_open_error               = 1
+     file_read_error               = 2
+     no_batch                      = 3
+     gui_refuse_filetransfer       = 4
+     invalid_type                  = 5
+     no_authority                  = 6
+     unknown_error                 = 7
+     bad_data_format               = 8
+     header_not_allowed            = 9
+     separator_not_allowed         = 10
+     header_too_long               = 11
+     unknown_dp_error              = 12
+     access_denied                 = 13
+     dp_out_of_memory              = 14
+     disk_full                     = 15
+     dp_timeout                    = 16
+     OTHERS                        = 17
+            .
+  IF sy-subrc = 0.
+
+* If you read from or write to a file that is open in text mode, the
+* data is transferred line by line. The system assumes that the file
+* has a line structure.
+    OPEN DATASET 'ZPMDC' FOR OUTPUT IN TEXT MODE ENCODING DEFAULT.
+*  OPEN DATASET pa_fpath FOR OUTPUT IN BINARY MODE.
+*  OPEN DATASET pa_fpath FOR APPENDING IN TEXT MODE ENCODING DEFAULT.
+    IF sy-subrc = 0.
+      LOOP AT it_mara INTO wa_mara.
+*     Write the data into the file
+        TRANSFER wa_mara TO 'ZPMDC'.
+*        WRITE:/ wa_mara-matnr,wa_mara-mtart,wa_mara-meins,wa_mara-ntgew.
+      ENDLOOP.
+      WRITE:/ 'Dataset ZPMDC' COLOR 6, 'Created and & data trasferd'.
+    ELSE.
+      WRITE :/ 'Error while opening the file'.
+* Close the dataset
+      CLOSE DATASET 'ZPMDC'.
+    ENDIF.
+  ENDIF.
+
+
+  CLEAR: wa_mara.
+  REFRESH: it_mara.

@@ -1,0 +1,493 @@
+*&---------------------------------------------------------------------*
+*& Report  ZANIL_DOWNLOAD_PROGRAMS
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  zanil_download_programs.
+*DATA : itab TYPE TABLE OF string,
+*       itab4 TYPE TABLE OF string,
+*       g_string TYPE string,
+*       g_c(7) TYPE c,
+*       g_stokes TYPE stokes,
+*       itab1 LIKE TABLE OF g_c,
+*       itab2 TYPE TABLE OF stokes,
+*       wa_itab2 LIKE LINE OF itab2,
+*       g_tabix TYPE sy-tabix,
+*       g_text TYPE repti,
+*       itab3 TYPE TABLE OF sstmnt.
+*DATA: frontendslashseparator TYPE string.
+*DATA: slashseparatortouse TYPE string.
+*DATA: frontendopsystem TYPE string.
+*CONSTANTS: unix TYPE string VALUE 'UNIX'.
+*CONSTANTS: non_unix TYPE string VALUE 'not UNIX'.
+*TYPES : g_file TYPE rlgrap-filename.
+*
+**Program name to be dowloaded.
+*SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE text-001.
+*PARAMETERS : p_prgnam TYPE progname DEFAULT 'ZUSEREXIT'.
+*SELECTION-SCREEN END OF BLOCK b1.
+*
+*SELECTION-SCREEN BEGIN OF BLOCK b2 WITH FRAME TITLE text-003.
+*PARAMETERS: pfolder TYPE rlgrap-filename DEFAULT 'F:\ANIL'.
+*SELECTION-SCREEN: END OF BLOCK b2.
+*
+**INITIALIZATION.
+*AT SELECTION-SCREEN ON VALUE-REQUEST FOR p_prgnam.
+*  IF p_prgnam IS NOT INITIAL.
+*  ENDIF.
+**-----------------------------------------------------------------------
+** Display a directory picker window
+**-----------------------------------------------------------------------
+*AT SELECTION-SCREEN ON VALUE-REQUEST FOR pfolder.
+*  DATA: objfile TYPE REF TO cl_gui_frontend_services.
+*  DATA: pickedfolder TYPE string.
+*  DATA: initialfolder TYPE string.
+*  DATA : i_dynpread TYPE TABLE OF dynpread,
+*         wa_dynpread TYPE dynpread.
+*  wa_dynpread-fieldname = 'PFOLDER'.
+*  APPEND wa_dynpread TO i_dynpread.
+*
+*  CALL FUNCTION 'DYNP_VALUES_READ'
+*    EXPORTING
+*      dyname               = sy-repid
+*      dynumb               = sy-dynnr
+*    TABLES
+*      dynpfields           = i_dynpread
+*    EXCEPTIONS
+*      invalid_abapworkarea = 1
+*      invalid_dynprofield  = 2
+*      invalid_dynproname   = 3
+*      invalid_dynpronummer = 4
+*      invalid_request      = 5
+*      no_fielddescription  = 6
+*      invalid_parameter    = 7
+*      undefind_error       = 8
+*      double_conversion    = 9
+*      stepl_not_found      = 10
+*      OTHERS               = 11.
+*  IF sy-subrc = 0.
+*    READ TABLE i_dynpread INTO wa_dynpread WITH KEY fieldname = 'PFOLDER'.
+*    IF sy-subrc EQ 0.
+*      MOVE : wa_dynpread-fieldvalue TO initialfolder.
+*    ENDIF.
+*  ENDIF.
+*  IF sy-batch IS INITIAL.
+*    CREATE OBJECT objfile.
+*    IF NOT pfolder IS INITIAL.
+*      initialfolder = pfolder.
+*    ELSE.
+*      objfile->get_temp_directory( CHANGING temp_dir = initialfolder
+*                                   EXCEPTIONS cntl_error = 1
+*                                             error_no_gui = 2
+*                                             not_supported_by_gui = 3 ).
+*    ENDIF.
+*    objfile->directory_browse( EXPORTING initial_folder = initialfolder
+*                     CHANGING selected_folder = pickedfolder
+*                     EXCEPTIONS cntl_error = 1
+*                                error_no_gui = 2
+*                                not_supported_by_gui = 3 ).
+*    IF sy-subrc = 0.
+*      pfolder = pickedfolder.
+*    ELSE.
+*      WRITE: / 'An error has occured picking a folder'.
+*    ENDIF.
+*  ENDIF.
+*
+*INITIALIZATION.
+** Determine the frontend operating system type.
+*  IF sy-batch IS INITIAL.
+*    PERFORM determinefrontendopsystem USING frontendslashseparator
+*                                            frontendopsystem.
+*  ENDIF.
+*  g_c = 'INCLUDE'.
+*  APPEND g_c TO itab1.
+*
+*START-OF-SELECTION.
+**Populate an internal table with the report name specified in the
+**selection screen
+*  READ REPORT p_prgnam INTO itab.
+**If report exists.
+*  IF itab IS NOT INITIAL.
+**Use the system code for obtaining any include in the report.
+*    SCAN ABAP-SOURCE itab TOKENS INTO itab2 STATEMENTS INTO itab3
+*                                              KEYWORDS FROM itab1.
+**Get the tokens if any.
+*    IF itab2 IS NOT INITIAL.
+*      APPEND LINES OF itab TO itab4.
+*      REFRESH : itab.
+*      LOOP AT itab2 INTO g_stokes.
+**For downloading includes if any in the program.
+*        IF g_stokes-str = 'INCLUDE'.
+*          g_tabix = sy-tabix + 1.
+*          CONTINUE.
+*        ENDIF.
+**Get the include names if any using read to itab2.
+*        READ TABLE itab2 INTO wa_itab2 INDEX g_tabix.
+*        IF sy-subrc EQ 0.
+*          WRITE : wa_itab2-str TO g_text.
+**Getting the include code into an internal table.
+*          READ REPORT g_text INTO itab.
+*          APPEND LINES OF itab TO itab4.
+*          REFRESH : itab.
+*        ENDIF.
+*      ENDLOOP.
+**download the file into a file on the pc.
+*      PERFORM dowload_file USING itab4[]
+*                                 pfolder.
+**Printing the whole program on the screen.
+*      LOOP AT itab4 INTO g_string.
+*        WRITE : / g_string.
+*      ENDLOOP.
+*    ELSE.
+**download the program to pc path.
+*      PERFORM dowload_file USING itab[]
+*                                 pfolder.
+**Display the code on the screen.
+*      LOOP AT itab INTO g_string.
+*        WRITE : / g_string.
+*      ENDLOOP.
+*    ENDIF.
+*  ELSE.
+*    WRITE : / 'Program with that name doesnt exist'.
+*  ENDIF.
+**&---------------------------------------------------------------------*
+**&      Form  dowload_file
+**&---------------------------------------------------------------------*
+**       text
+**----------------------------------------------------------------------*
+**      -->P_ITAB4[]  text
+**      -->P_PFOLDER  text
+**----------------------------------------------------------------------*
+*FORM dowload_file  USING    p_itab4
+*                            p_pfolder.
+*
+*  DATA: objfile TYPE REF TO cl_gui_frontend_services.
+*  DATA : filenamewithpath TYPE string.
+*
+*  CONCATENATE pfolder '\' p_prgnam   INTO filenamewithpath.
+*
+*  CONDENSE filenamewithpath.  CREATE OBJECT objfile.
+*
+*  CALL METHOD objfile->gui_download
+*    EXPORTING
+*      filename                = filenamewithpath
+*      filetype                = 'ASC'
+**      write_field_separator   = writefieldseparator
+**      trunc_trailing_blanks   = truncatetrailingblanks
+*    CHANGING
+*      data_tab                = p_itab4
+*    EXCEPTIONS
+*      file_write_error        = 1
+*      no_batch                = 2
+*      gui_refuse_filetransfer = 3
+*      invalid_type            = 4
+*      no_authority            = 5
+*      unknown_error           = 6
+*      header_not_allowed      = 7
+*      separator_not_allowed   = 8
+*      filesize_not_allowed    = 9
+*      header_too_long         = 10
+*      dp_error_create         = 11
+*      dp_error_send           = 12
+*      dp_error_write          = 13
+*      unknown_dp_error        = 14
+*      access_denied           = 15
+*      dp_out_of_memory        = 16
+*      disk_full               = 17
+*      dp_timeout              = 18
+*      file_not_found          = 19
+*      dataprovider_exception  = 20
+*      control_flush_error     = 21
+*      not_supported_by_gui    = 22
+*      error_no_gui            = 23.
+*  IF sy-subrc <> 0.
+**    PERFORM displaystatus USING statusmessage 3.
+*  ENDIF.
+*ENDFORM.                    " dowload_file
+**&---------------------------------------------------------------------*
+**&      Form  determinefrontendopsystem
+**&---------------------------------------------------------------------*
+**       text
+**----------------------------------------------------------------------*
+**      -->P_FRONTENDSLASHSEPARATOR  text
+**      -->P_FRONTENDOPSYSTEM  text
+**----------------------------------------------------------------------*
+*FORM determinefrontendopsystem  USING   separator
+*                                     operatingsystem.
+*  DATA: platformid TYPE i VALUE 0.
+*  DATA: objfile TYPE REF TO cl_gui_frontend_services.
+*  CREATE OBJECT objfile.
+*  CALL METHOD objfile->get_platform
+*    RECEIVING
+*      platform             = platformid
+*    EXCEPTIONS
+*      cntl_error           = 1
+*      error_no_gui         = 2
+*      not_supported_by_gui = 3.
+*  CASE platformid.
+*    WHEN objfile->platform_windows95
+*         OR objfile->platform_windows98
+*         OR objfile->platform_nt351
+*         OR objfile->platform_nt40
+*         OR objfile->platform_nt50
+*         OR objfile->platform_mac
+*         OR objfile->platform_os2
+*         OR 14.      "XP
+*      separator = '\'.
+*      operatingsystem = non_unix.
+*    WHEN OTHERS.
+*      separator = '/'.
+*      operatingsystem = unix.
+*  ENDCASE.
+*ENDFORM.                    " determinefrontendopsystem
+
+*******************************************************************
+
+***table decleration
+tables : tadir.
+*data decleration
+TYPES: codeline(255).
+DATA: sourcecode TYPE STANDARD TABLE OF codeline WITH HEADER LINE.
+DATA: prog(60) ,
+      codefile  LIKE rlgrap-filename,
+      filename  TYPE string,
+
+      func_tab    TYPE TABLE OF rs38l_incl WITH HEADER LINE,
+      pname       TYPE pname,
+      poolname    TYPE tlibg-area,
+      fmcount(3)  TYPE n ,
+      prgcount(3) TYPE n,
+      msg1(45).
+
+*Internal table for prgram info
+DATA: BEGIN OF pgminfo OCCURS 0,
+  pgmid TYPE tadir-pgmid,
+  object TYPE tadir-object,
+  obj_name TYPE tadir-obj_name,
+  devclass TYPE tadir-devclass,
+END OF pgminfo.
+
+*____________________________________________________________________
+
+*Get Development class from User
+PARAMETERS: pckg TYPE tadir-devclass.
+*____________________________________________________________________
+
+*Initialize variables
+fmcount  = '000'.
+prgcount = '000'.
+*____________________________________________________________________
+
+*Proceed one by one
+PERFORM cleardata.
+PERFORM write_prgrms.
+PERFORM cleardata.
+PERFORM write_fms.
+
+CONCATENATE prgcount ' Prgs Files & '
+            fmcount ' FM Files Written' INTO msg1.
+MESSAGE s001(00) WITH msg1.
+
+*____________________________________________________________________
+
+
+*&------------------------------------------------------------------*
+*&      Form  cleardata
+*&------------------------------------------------------------------*
+*       text
+*-------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*-------------------------------------------------------------------*
+FORM cleardata.
+
+  CLEAR: sourcecode,
+         pgminfo[],
+         prog,
+         codefile,
+         filename,
+         func_tab[],
+         pname,
+         poolname.
+
+ENDFORM.                    " cleardata
+
+*&------------------------------------------------------------------*
+*&      Form  write_prgrms
+*&------------------------------------------------------------------*
+*       text
+*-------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*-------------------------------------------------------------------*
+FORM write_prgrms.
+
+  DATA: prgmsg(45).
+
+*select statement.
+  SELECT pgmid object obj_name devclass FROM tadir INTO TABLE pgminfo
+  WHERE pgmid = 'R3TR' AND
+  object      = 'PROG' AND
+  devclass    = pckg.
+
+  LOOP AT pgminfo.
+    prog = pgminfo-obj_name.
+    READ REPORT prog INTO sourcecode.
+
+    CONCATENATE 'C:\ABAP\'
+    pckg
+    'Reports\'
+    prog
+    '.txt'
+    INTO codefile.
+    filename = codefile.
+
+*function module for download files into local system
+    CALL FUNCTION 'GUI_DOWNLOAD'
+      EXPORTING
+        filename                = filename
+      TABLES
+        data_tab                = sourcecode
+      EXCEPTIONS
+        file_write_error        = 1
+        no_batch                = 2
+        gui_refuse_filetransfer = 3
+        invalid_type            = 4
+        no_authority            = 5
+        unknown_error           = 6
+        header_not_allowed      = 7
+        separator_not_allowed   = 8
+        filesize_not_allowed    = 9
+        header_too_long         = 10
+        dp_error_create         = 11
+        dp_error_send           = 12
+        dp_error_write          = 13
+        unknown_dp_error        = 14
+        access_denied           = 15
+        dp_out_of_memory        = 16
+        disk_full               = 17
+        dp_timeout              = 18
+        file_not_found          = 19
+        dataprovider_exception  = 20
+        control_flush_error     = 21
+        OTHERS                  = 22.
+
+    IF sy-subrc <> 0.
+*    MESSAGE ID SY-MSGID TYPE SY-MSGTY NUMBER SY-MSGNO
+*    WITH SY-MSGV1 SY-MSGV2 SY-MSGV3 SY-MSGV4.
+    ELSE.
+      prgcount = prgcount + 1.
+    ENDIF.
+
+    CLEAR prog.
+    CLEAR: sourcecode[] , sourcecode , func_tab.
+
+  ENDLOOP.
+
+  CONCATENATE prgcount ' Prgs Files Written' INTO prgmsg..
+  MESSAGE s001(00) WITH prgmsg.
+
+ENDFORM.                    " write_prgrms
+
+*____________________________________________________________________
+
+*&------------------------------------------------------------------*
+*&      Form  write_fms
+*&------------------------------------------------------------------*
+*       text
+*-------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*-------------------------------------------------------------------*
+FORM write_fms.
+
+  DATA: fmmsg(45).
+
+*select statement to get all function groups.
+  SELECT pgmid object obj_name devclass FROM tadir INTO TABLE pgminfo
+  WHERE pgmid = 'R3TR' AND
+  object = 'FUGR' AND
+  devclass = pckg.
+
+  LOOP AT pgminfo.
+
+    poolname = pgminfo-obj_name.
+
+    CALL FUNCTION 'RS_FUNCTION_POOL_CONTENTS'
+      EXPORTING
+        function_pool                 = poolname
+      TABLES
+        functab                       = func_tab
+*   EXCEPTIONS
+*     FUNCTION_POOL_NOT_FOUND       = 1
+*     OTHERS                        = 2
+              .
+    IF sy-subrc <> 0.
+* MESSAGE ID SY-MSGID TYPE SY-MSGTY NUMBER SY-MSGNO
+*         WITH SY-MSGV1 SY-MSGV2 SY-MSGV3 SY-MSGV4.
+    ENDIF.
+
+    LOOP AT func_tab .
+
+      prog = func_tab-include.
+
+      READ REPORT prog INTO sourcecode.
+
+      CONCATENATE 'C:\ABAP\'
+      pckg
+      'FM\'
+      func_tab-funcname
+      '.txt'
+      INTO codefile.
+
+      filename = codefile.
+*function module for download files into local system
+      CALL FUNCTION 'GUI_DOWNLOAD'
+        EXPORTING
+          filename                = filename
+        TABLES
+          data_tab                = sourcecode
+        EXCEPTIONS
+          file_write_error        = 1
+          no_batch                = 2
+          gui_refuse_filetransfer = 3
+          invalid_type            = 4
+          no_authority            = 5
+          unknown_error           = 6
+          header_not_allowed      = 7
+          separator_not_allowed   = 8
+          filesize_not_allowed    = 9
+          header_too_long         = 10
+          dp_error_create         = 11
+          dp_error_send           = 12
+          dp_error_write          = 13
+          unknown_dp_error        = 14
+          access_denied           = 15
+          dp_out_of_memory        = 16
+          disk_full               = 17
+          dp_timeout              = 18
+          file_not_found          = 19
+          dataprovider_exception  = 20
+          control_flush_error     = 21
+          OTHERS                  = 22.
+
+      IF sy-subrc <> 0.
+*    MESSAGE ID SY-MSGID TYPE SY-MSGTY NUMBER SY-MSGNO
+*    WITH SY-MSGV1 SY-MSGV2 SY-MSGV3 SY-MSGV4.
+      ELSE.
+        fmcount =  fmcount + 1.
+      ENDIF.
+
+      CLEAR prog.
+      CLEAR: sourcecode[] , sourcecode , func_tab.
+
+    ENDLOOP.
+
+  ENDLOOP.
+  CONCATENATE fmcount ' FM Files Written' INTO fmmsg..
+  MESSAGE s001(00) WITH fmmsg.
+
+ENDFORM.                    " write_fms

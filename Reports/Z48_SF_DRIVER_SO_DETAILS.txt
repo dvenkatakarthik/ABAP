@@ -1,0 +1,75 @@
+*&---------------------------------------------------------------------*
+*& Report  Z48_SF_DRIVER_SO_DETAILS
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z48_sf_driver_so_details.
+
+DATA: it_vbak TYPE TABLE OF vbak,
+      it_vbap TYPE TABLE OF vbap,
+      wa_vbak TYPE vbak,
+      wa_vbap TYPE vbap.
+
+DATA: v_fname TYPE tdsfname.
+
+SELECT-OPTIONS: s_vbeln FOR wa_vbak-vbeln.
+
+START-OF-SELECTION.
+
+  SELECT * FROM vbak INTO TABLE it_vbak
+    WHERE vbeln IN s_vbeln.
+
+  IF  sy-subrc = 0.
+    SELECT * FROM vbap INTO TABLE it_vbap
+      FOR ALL ENTRIES IN it_vbak
+   WHERE vbeln = it_vbak-vbeln.
+  ENDIF.
+
+
+  CALL FUNCTION 'SSF_FUNCTION_MODULE_NAME'
+    EXPORTING
+      formname                 = 'Z48_SF_SO_DETAILS'
+*     VARIANT                  = ' '
+*     DIRECT_CALL              = ' '
+   IMPORTING
+     fm_name                  =  v_fname
+   EXCEPTIONS
+     no_form                  = 1
+     no_function_module       = 2
+     OTHERS                   = 3
+            .
+  IF sy-subrc = 0.
+    CALL FUNCTION v_fname "'/1BCDWB/SF00000966'
+*    EXPORTING
+*      ARCHIVE_INDEX              =
+*      ARCHIVE_INDEX_TAB          =
+*      ARCHIVE_PARAMETERS         =
+*      CONTROL_PARAMETERS         =
+*      MAIL_APPL_OBJ              =
+*      MAIL_RECIPIENT             =
+*      MAIL_SENDER                =
+*      OUTPUT_OPTIONS             =
+*      USER_SETTINGS              = 'X'
+*    IMPORTING
+*      DOCUMENT_OUTPUT_INFO       =
+*      JOB_OUTPUT_INFO            =
+*      JOB_OUTPUT_OPTIONS         =
+      TABLES
+        it_vbak                    = it_vbak
+        it_vbap                    = it_vbap
+     EXCEPTIONS
+       formatting_error           = 1
+       internal_error             = 2
+       send_error                 = 3
+       user_canceled              = 4
+       OTHERS                     = 5
+              .
+    IF sy-subrc NE 0.
+      MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+              WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+    ENDIF.
+
+  ENDIF.

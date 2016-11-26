@@ -1,0 +1,126 @@
+*&---------------------------------------------------------------------*
+*& Report  Z48_F4_F1_DEMO
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z48_f4_f1_demo.
+*** INTERNAL TABLE FOR STORING NAMES IN SELECTION LIST
+DATA: BEGIN OF t_itab OCCURS 0,
+        ernam  TYPE ernam,
+        erdat  TYPE erdat,
+      END OF t_itab.
+***FIELDNAME AND TAB NAME FOR THE SELECTION
+DATA :field_tab LIKE dfies  OCCURS 0 WITH HEADER LINE.
+*THE TABLE FOR RETURNING THE NAME OF THE SELECTED ITEM
+DATA : return_tab LIKE ddshretval OCCURS 0 WITH HEADER LINE.
+
+***START THE SELECTION SCREEN BLOCK
+SELECTION-SCREEN COMMENT /1(50) comm1.
+SELECTION-SCREEN ULINE.
+SELECTION-SCREEN SKIP.
+
+SELECTION-SCREEN BEGIN OF BLOCK ss1 WITH FRAME.
+PARAMETERS: p_name1(10) TYPE c.
+SELECTION-SCREEN END OF BLOCK ss1.
+
+*&---------------------------------------------------------------------*
+*&                                                                     *
+*& F4 Help for p_name1                                                 *
+*&---------------------------------------------------------------------*
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR p_name1.
+
+*CLEAR ALL EXISTING DATA
+*TO BE DONE EVERYTIME F4 HELP IS REQUESTED
+  REFRESH t_itab.
+  REFRESH field_tab.
+
+  field_tab-fieldname = 'ERNAM'.
+  field_tab-tabname = 'VBAK'.
+  APPEND field_tab.
+
+  field_tab-fieldname = 'ERDAT'.
+  field_tab-tabname = 'VBAK'.
+  APPEND field_tab.
+
+  SELECT ernam erdat FROM vbak
+    INTO TABLE t_itab UP TO 100 ROWS.
+
+
+  CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
+     EXPORTING
+*   DDIC_STRUCTURE         = ' '
+       retfield               = 'ERNAM'
+*   PVALKEY                = ' '
+      dynpprog               =  sy-repid
+*      dynpnr                 = '01000'
+      dynprofield            = 'ERNAM'
+*   STEPL                  = 0
+*   WINDOW_TITLE           =
+*   VALUE                  = ' '
+      value_org              = 'S'
+*   MULTIPLE_CHOICE        = ' '
+*   DISPLAY                = ' '
+*   CALLBACK_PROGRAM       = ' '
+*   CALLBACK_FORM          = ' '
+*   MARK_TAB               =
+* IMPORTING
+*   USER_RESET             =
+     TABLES
+       value_tab              = t_itab
+*   FIELD_TAB              =
+*   RETURN_TAB             =
+*   DYNPFLD_MAPPING        =
+    EXCEPTIONS
+      parameter_error        = 1
+      no_values_found        = 2
+      OTHERS                 = 3
+             .
+  IF sy-subrc <> 0.
+    MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+            WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+  ELSE.
+    p_name1 = return_tab-fieldval.
+  ENDIF.
+
+
+*&---------------------------------------------------------------------*
+*&                                                                     *
+*& F1 Help for p_name1                                                 *
+*&---------------------------------------------------------------------*
+AT SELECTION-SCREEN ON HELP-REQUEST FOR p_name1.
+
+  CALL FUNCTION 'DSYS_SHOW_FOR_F1HELP'
+EXPORTING
+*   APPLICATION              = 'SO70'
+dokclass                 = 'TX'
+doklangu                 = sy-langu
+dokname                  = 'Z48_DOC'
+   doktitle                 = 'ABAP 48 BATCH'
+*   HOMETEXT                 = ' '
+*   OUTLINE                  = ' '
+*   VIEWNAME                 = 'STANDARD'
+*   Z_ORIGINAL_OUTLINE       = ' '
+*   CALLED_FROM_SO70         = ' '
+*   SHORT_TEXT               = ' '
+*   APPENDIX                 = ' '
+* IMPORTING
+*   APPL                     =
+*   PF03                     =
+*   PF15                     =
+*   PF12                     =
+EXCEPTIONS
+class_unknown            = 1
+object_not_found         = 2
+OTHERS                   = 3
+.
+  IF sy-subrc <> 0.
+* MESSAGE ID SY-MSGID TYPE SY-MSGTY NUMBER SY-MSGNO
+*         WITH SY-MSGV1 SY-MSGV2 SY-MSGV3 SY-MSGV4.
+  ENDIF.
+
+  initialization.
+
+  comm1 ='Comment on selection Screen'.

@@ -1,0 +1,57 @@
+*&---------------------------------------------------------------------*
+*& Report  ZPMDC_UPLOAD_AL11
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  zpmdc_download_al11.
+
+TYPES: BEGIN OF tw_mara,
+        matnr TYPE char18,"matnr,         "Material Number
+        mtart TYPE char4,"mtart,         "Material Type
+        meins TYPE char2,"meins,         "Base Unit of Measure
+        ntgew TYPE char15,"ntgew,         "Netwt
+       END OF tw_mara.
+
+DATA: it_mara TYPE TABLE OF tw_mara,
+      wa_mara TYPE tw_mara.
+
+*&---------------------------------------------------------------------*
+*&                     SELECTION-SCREEN
+*&---------------------------------------------------------------------*
+SELECTION-SCREEN BEGIN OF BLOCK bk1 WITH FRAME TITLE text-001.
+PARAMETERS : pa_fname TYPE localfile. "rlgrap-filename.
+*SELECT-OPTIONS: s_matnr FOR wa_mara-matnr.
+SELECTION-SCREEN END OF BLOCK bk1.
+
+START-OF-SELECTION.
+
+** Open the dataset for reading the file.
+*  OPEN DATASET pa_fpath FOR INPUT IN TEXT MODE ENCODING DEFAULT.
+  OPEN DATASET pa_fname FOR INPUT IN TEXT MODE ENCODING DEFAULT.
+  IF sy-subrc EQ 0.
+* Read data from the file existing in the App. Server
+    DO.
+      READ DATASET  pa_fname INTO wa_mara.
+      IF sy-subrc NE 0.
+*       If no data found in File, then exit from DO.. ENDDO.
+        EXIT.
+      ELSE.
+        APPEND wa_mara TO it_mara.
+        CLEAR: wa_mara.
+***      RECORDING START & END
+      ENDIF.
+    ENDDO.
+  ELSE.
+    WRITE :/ 'Error while opening the file'.
+  ENDIF.
+* Close the dataset
+  CLOSE DATASET pa_fname.
+
+
+  LOOP AT it_mara INTO wa_mara.
+    WRITE:/ wa_mara.
+***      RECORDING START & END
+  ENDLOOP.

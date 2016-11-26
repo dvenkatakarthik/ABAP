@@ -1,0 +1,77 @@
+*&---------------------------------------------------------------------*
+*& Module Pool  Z48_SUB_SCREEN
+*&
+*&---------------------------------------------------------------------*
+*& SUB SCREENS :                                                       *
+*&      CALL SUBSCREEN <Sub Screen Area> INCLUDING <Prog> <dynnr>.     *
+*& Displays and processes the subscreen screen 'dynnr' from program    *
+*& 'prog' in the defined area 'Sub Screen Area' of the main screen.    *
+*&                                                                     *
+*& When you call the subscreen in the PBO, only its PBO modules are    *
+*& processed.                                                          *
+*& You process the PAI modules of the subscreen in the PAI event of the*
+*& main screen using the following statement .                         *
+*&       CALL SUBSCREEN <Sub Screen Area>.                             *
+*&                                                                     *
+*& CALL SUBSCREEN ... is not allowed between LOOP and ENDLOOP.         *
+*& Field names must be unique across all subscreens that are called    *
+*& either statically or dynamically from the same main screen.         *
+*&---------------------------------------------------------------------*
+
+PROGRAM  z48_sub_screen.
+
+TABLES: kna1.
+
+*       Types declaration for Customer's Country Key, Name & City
+TYPES : BEGIN OF tw_kna1,
+          kunnr TYPE kunnr,
+          land1 TYPE land1_gp,
+          name1 TYPE name1_gp,
+          ort01 TYPE ort01_gp,
+          telf1 TYPE telf1,
+        END OF tw_kna1.
+
+*     Data declaration for screen field Customer(KUNNR).
+DATA: lw_kna1 TYPE tw_kna1.
+
+DATA: ok_code TYPE sy-ucomm.
+
+
+*&---------------------------------------------------------------------*
+*&      Module  STATUS_0100  OUTPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'SUB_SCREEN'.
+*  SET TITLEBAR 'xxx'.
+
+ENDMODULE.                 " STATUS_0100  OUTPUT
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+  CASE ok_code.
+    WHEN 'DISP'.
+*     Fetch Country Key, Name & City from KNA1 table
+      SELECT SINGLE kunnr land1 name1 ort01 telf1 FROM kna1
+      INTO lw_kna1 WHERE kunnr = kna1-kunnr.
+    WHEN 'BACK'.
+*     Leave the current screen
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.                 " USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*&      Module  POPULATE_DATA  OUTPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE populate_data OUTPUT.
+  kna1-kunnr = lw_kna1-kunnr.
+  kna1-land1 = lw_kna1-land1.
+  kna1-name1 = lw_kna1-name1.
+  kna1-ort01 = lw_kna1-ort01.
+  kna1-telf1 = lw_kna1-telf1.
+ENDMODULE.                 " POPULATE_DATA  OUTPUT

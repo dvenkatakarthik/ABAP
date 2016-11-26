@@ -1,0 +1,58 @@
+*&---------------------------------------------------------------------*
+*& Report  Z48_FM_CUSTOMER_INFO
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z48_fm_customer_info.
+
+*DATA: kunnr TYPE  kunnr,
+*      land1 TYPE  land1_gp,
+*      name1 TYPE  name1_gp,
+*      ort01 TYPE  ort01_gp,
+*      telf1 TYPE  telf1.
+*
+*PARAMETERS: p_kunnr TYPE kunnr.
+*
+*CALL FUNCTION 'Z48_FM_CUSTOMER'
+*  EXPORTING
+*    i_kunnr       = p_kunnr
+*  IMPORTING
+*    e_kunnr       = kunnr
+*    e_land1       = land1
+*    e_name1       = name1
+*    e_ort01       = ort01
+*    e_telf1       = telf1
+*  EXCEPTIONS
+*    kunnr_invalid = 1
+*    OTHERS        = 2.
+*IF sy-subrc = 0.
+*  WRITE:/ kunnr,land1,name1,ort01,telf1.
+*ENDIF.
+
+TYPES: BEGIN OF ty_kna1.
+        INCLUDE STRUCTURE kna1.
+types: end of ty_kna1.
+
+DATA: it_kna1 TYPE TABLE OF ty_kna1,
+      wa_kna1 TYPE kna1.
+
+
+SELECT-OPTIONS: s_kunnr FOR wa_kna1-kunnr.
+
+CALL FUNCTION 'Z48_FM_USING_TABLES'
+  EXPORTING
+    i_kunnr_low   = s_kunnr-low
+    i_kunnr_high  = s_kunnr-high
+  TABLES
+    if_kna1       = it_kna1
+  EXCEPTIONS
+    kunnr_invalid = 1
+    OTHERS        = 2.
+IF sy-subrc = 0.
+  LOOP AT it_kna1 INTO wa_kna1.
+    WRITE:/ wa_kna1-kunnr,wa_kna1-land1,wa_kna1-name1,wa_kna1-ort01,wa_kna1-telf1.
+  ENDLOOP.
+ENDIF.

@@ -1,0 +1,81 @@
+*&---------------------------------------------------------------------*
+*& Report  Z48_CALL_SCREEN
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z48_call_screen.
+
+TABLES: lfa1.
+
+DATA:  lf_init  TYPE c,
+       it_lfa1  TYPE TABLE OF lfa1,
+       lw_lfa1  TYPE lfa1.
+
+TYPE-POOLS: vrm.
+
+DATA: values TYPE vrm_values WITH HEADER LINE.
+
+CALL SCREEN 100.
+*&---------------------------------------------------------------------*
+*&      Module  STATUS_0100  OUTPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'ABAP48'.
+*  SET TITLEBAR 'xxx'.
+
+ENDMODULE.                 " STATUS_0100  OUTPUT
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+  CASE sy-ucomm.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+
+    WHEN 'DISP'.
+
+      SELECT SINGLE * FROM lfa1 INTO lw_lfa1
+        WHERE lifnr = lfa1-lifnr.
+      IF sy-subrc = 0.
+        lfa1-name1 = lw_lfa1-name1.
+      ENDIF.
+  ENDCASE.
+ENDMODULE.                 " USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*&      Module  POPULATE_LISTBOX  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE populate_listbox INPUT.
+
+  CLEAR: values.
+  REFRESH values.
+
+  SELECT SINGLE * INTO lw_lfa1 FROM lfa1
+     WHERE lifnr = lfa1-lifnr.
+
+  values-text = lw_lfa1-name1.
+  values-key = lw_lfa1-lifnr.
+  APPEND values.
+
+  CALL FUNCTION 'VRM_SET_VALUES'
+    EXPORTING
+      id              = 'NAME1'
+      values          = values[]
+    EXCEPTIONS
+      id_illegal_name = 1
+      OTHERS          = 2.
+  IF sy-subrc <> 0.
+    MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+            WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+  ENDIF.
+
+  APPEND values.
+ENDMODULE.                 " POPULATE_LISTBOX  INPUT

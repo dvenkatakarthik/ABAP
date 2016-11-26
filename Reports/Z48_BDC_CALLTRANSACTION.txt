@@ -1,0 +1,344 @@
+*&---------------------------------------------------------------------*
+*& Methods in BDC (Batch Data Communication)
+*& 1. Call Transaction Method
+*& 2. Session Method
+*& 3. Direct Input Method
+*&
+*& Prerequisite for Data Transfer Program :
+*& 1. Analyzing data from local file.
+*& 2. Analyzing the transaction
+*&      - The Transaction code, if you do not already know it.
+*&      - Which fields are Mandatory
+*&      - Which fields you can allow to default values
+*&      - The Names, Types and Lengths of the fields that are used by
+*&        transaction.
+*&      - Screen number and Name of modulepool program behind that
+*&        particular transaction.
+*& 3. Declaring Internal table.
+*&      - First Internal table similar to structure like local file.
+*&      - Declaring Internal table like BDCDATA.
+*&        BDCDATA Structure : The data from internal table is not
+*&        transfered directly to database table, it has to go through
+*&        transaction. You need to pass data to particular screen and
+*&        particular screen field. Data is passed to transaction in
+*&        particular format hence the need for BDCDATA structure. This
+*&        structure can contain the data for only a single run of a
+*&        transaction.
+*&        The BDCDATA structure contains the following fields.
+*&        1. PROGRAM : Name of the modulepool program associated with
+*&           the screen. Set this field only in the first record for the
+*&           screen. Data type for this field is CHAR and length is 40.
+*&        2. DYNPRO : Number of the screen. Set this field only in the
+*&           first record for the screen. Data type for this field is
+*&           NUMC and length is 4.
+*&        3. DYNBEGIN : Indicates the BDC screen start and set this
+*&           field to 'X' only for the first record for the screen.
+*&           Reset to ' '(blank) for all other records. Data type for
+*&           this field is CHAR and length is 1.
+*&        4. FNAM : Name of the field in the screen.The FNAM field is
+*&           not case-sensitive. Data type for this field is CHAR and
+*&           length is 132.
+*&        5. FVAL : Value for the field named in FNAM. The FVAL field
+*&           is case-sensitive. Data type for this field is CHAR and
+*&           length is 132.
+*& 4. Transfering data from local file to internal table.
+*& 5. Population of BDCDATA : For each record of internal table, you
+*&    need to populate internal table which is similar to BDCDATA
+*&    structure.
+*& CALL TRANSACTION :
+*&    1. It is compatible for small amount of data only.
+*&    2. It process the data Synchronously. i.e., The data is updated
+*&       at the time of execution.
+*&    3. It updates data both Synchronously and Asynchronously. When
+*&       we use Synchronous mode, it always verify all the data updated
+*&       successfully in the database.
+*&       When we use Asynchronous mode, the system can not wait till
+*&       all the data updated in the database.
+*&    4. It can handle only one application at a time.
+*&    5. It does not have Log file, we need to design logfile explicitly
+*&       using BDCMSGCOLL stucture.
+*&
+*& Sytax :
+*&  CALL TRANSACTION <T.Code> USING <BDCTAB> MODE <A/N/E> UPDATE <S/A>
+*&  MESSAGES INTO <BDCMSGCOLL Int.Table>
+*&
+*&  Parameter 1 : Transaction Code
+*&  Parameter 2 : It is name of BDCDATA table.
+*&  Parameter 3 : Specifying Mode in which you execute transaction.
+*&                  A - All screen mode. All the screen of transaction
+*&                      are displayed.
+*&                  N - No screen mode. No screen is displayed when you
+*&                      execute the transaction.
+*&                  E - Error screen. Only those screens are displayed
+*&                      where you have error record.
+*&  Parameter 4 : Specifying Update type by which data base table is
+*&                updated.
+*&                S - It is for Synchronous update in which if you
+*&                    change data for one table then all the relacted
+*&                    tables gets updated. And then sy-subrc is returned
+*&                    i.e., sy-subrc is returned for once and all.
+*&                A - It is for Asynchronous update, when you change
+*&                    data of one table, the sy-subrc is returned. And
+*&                    then updation of other affected tables takes place
+*&                    If system fails to update other tables still
+*&                    sy-subrc returned is 0.
+*&  Parameter 5 : When you update database table, operation is either
+*&                successful or unsuccessful or operation is successful
+*&                with some warning. These messages are stored in
+*&                internal table which you specify along with MESSAGE
+*&                statement. This internal table should be declared like
+*&                BDCMSGCOLL structure.
+*&
+*&  Steps for CALL TRANSACTION Method :
+*&   1. Interanal table for the data (structure similler to local file)
+*&   2. BDCTAB like BDCDATA.
+*&   3. Use UPLOAD/WS_UPLOAD/GUI_UPLOAD or DATASETS for upload data from
+*&      local file to internal table (i.e. ITAB).
+*&   4. LOOP at Itab.
+*&        Populate BDCTAB table.
+*&        CALL TRANSACTION <T.Code> USING <BDCTAB> MODE <A/N/E>
+*&             UPDATE <S/A>  MESSAGES INTO <BDCMSGCOLL Int.Table>
+*&        Refresh BDCTAB.
+*&      ENDLOOP.
+*&---------------------------------------------------------------------*
+REPORT z48_bdc_calltransaction
+       NO STANDARD PAGE HEADING LINE-SIZE 255.
+
+TYPES: BEGIN OF ty_lfa1,
+         lifnr TYPE lifnr,
+         bukrs TYPE bukrs,
+         ekorg TYPE ekorg,
+         ktokk TYPE ktokk,
+         name1 TYPE name1_gp,
+         sortl TYPE sortl,
+         land1 TYPE land1_gp,
+         akont TYPE akont,
+         fdgrv TYPE fdgrv,
+        END OF ty_lfa1.
+
+DATA: it_lfa1 TYPE STANDARD TABLE OF ty_lfa1,
+      wa_lfa1 TYPE ty_lfa1.
+
+DATA : v_file TYPE string.
+
+DATA: it_bdcdata TYPE TABLE OF bdcdata,
+      wa_bdcdata TYPE bdcdata.
+
+DATA: it_bdcmsgcoll TYPE TABLE OF bdcmsgcoll,
+      wa_bdcmsgcoll TYPE bdcmsgcoll.
+*&---------------------------------------------------------------------*
+*&                     SELECTION-SCREEN
+*&---------------------------------------------------------------------*
+SELECTION-SCREEN BEGIN OF BLOCK bk1 WITH FRAME TITLE text-001.
+PARAMETERS : pa_fname TYPE rlgrap-filename OBLIGATORY.
+SELECTION-SCREEN END OF BLOCK bk1.
+*&---------------------------------------------------------------------*
+*&                             AT SELECTION SCREEN
+*&---------------------------------------------------------------------*
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR pa_fname.
+* F4 functionality for File Name
+  CALL FUNCTION 'F4_FILENAME'
+    EXPORTING
+      program_name  = sy-repid
+      dynpro_number = sy-dynnr
+      field_name    = ' '
+    IMPORTING
+      file_name     = pa_fname.
+*&---------------------------------------------------------------------*
+*&                     START-OF-SELECTION
+*&---------------------------------------------------------------------*
+START-OF-SELECTION.
+  v_file = pa_fname.
+
+  CALL FUNCTION 'GUI_UPLOAD'
+    EXPORTING
+      filename                      = v_file
+     filetype                      = 'ASC'
+     has_field_separator           = 'X'
+*     HEADER_LENGTH                 = 0
+*     READ_BY_LINE                  = 'X'
+*     DAT_MODE                      = ' '
+*     CODEPAGE                      = ' '
+*     IGNORE_CERR                   = ABAP_TRUE
+*     REPLACEMENT                   = '#'
+*     CHECK_BOM                     = ' '
+*     VIRUS_SCAN_PROFILE            =
+*     NO_AUTH_CHECK                 = ' '
+*   IMPORTING
+*     FILELENGTH                    =
+*     HEADER                        =
+    TABLES
+      data_tab                      = it_lfa1
+   EXCEPTIONS
+     file_open_error               = 1
+     file_read_error               = 2
+     no_batch                      = 3
+     gui_refuse_filetransfer       = 4
+     invalid_type                  = 5
+     no_authority                  = 6
+     unknown_error                 = 7
+     bad_data_format               = 8
+     header_not_allowed            = 9
+     separator_not_allowed         = 10
+     header_too_long               = 11
+     unknown_dp_error              = 12
+     access_denied                 = 13
+     dp_out_of_memory              = 14
+     disk_full                     = 15
+     dp_timeout                    = 16
+     OTHERS                        = 17
+            .
+  IF sy-subrc = 0.
+
+*include bdcrecx1.
+
+    LOOP AT it_lfa1 INTO wa_lfa1.
+
+      REFRESH it_bdcdata.
+
+      PERFORM bdc_dynpro      USING 'SAPMF02K' '0100'.
+      PERFORM bdc_field       USING 'BDC_CURSOR'
+                                    'RF02K-KTOKK'.
+      PERFORM bdc_field       USING 'BDC_OKCODE'
+                                    '/00'.
+      PERFORM bdc_field       USING 'RF02K-LIFNR'
+                                    wa_lfa1-lifnr.          "'76543'.
+      PERFORM bdc_field       USING 'RF02K-BUKRS'
+                                    wa_lfa1-bukrs.          "'1000'.
+      PERFORM bdc_field       USING 'RF02K-EKORG'
+                                    wa_lfa1-ekorg.          "'1000'.
+      PERFORM bdc_field       USING 'RF02K-KTOKK'
+                                    wa_lfa1-ktokk.          "'0001'.
+      PERFORM bdc_dynpro      USING 'SAPMF02K' '0110'.
+      PERFORM bdc_field       USING 'BDC_CURSOR'
+                                    'LFA1-NAME3'.
+      PERFORM bdc_field       USING 'BDC_OKCODE'
+                                    '=VW'.
+      PERFORM bdc_field       USING 'LFA1-NAME1'
+                                    wa_lfa1-name1. "'BDC VENDOR'.
+      PERFORM bdc_field       USING 'LFA1-SORTL'
+                                    wa_lfa1-sortl. "'BDC'.
+      PERFORM bdc_field       USING 'LFA1-LAND1'
+                                    wa_lfa1-land1. "'IN'.
+      PERFORM bdc_dynpro      USING 'SAPMF02K' '0120'.
+      PERFORM bdc_field       USING 'BDC_CURSOR'
+                                    'LFA1-STCD3'.
+      PERFORM bdc_field       USING 'BDC_OKCODE'
+                                    '=VW'.
+      PERFORM bdc_dynpro      USING 'SAPMF02K' '0130'.
+      PERFORM bdc_field       USING 'BDC_CURSOR'
+                                    'LFBK-BANKL(04)'.
+      PERFORM bdc_field       USING 'BDC_OKCODE'
+                                    '=VW'.
+      PERFORM bdc_dynpro      USING 'SAPMF02K' '0380'.
+      PERFORM bdc_field       USING 'BDC_CURSOR'
+                                    'KNVK-ANRED(01)'.
+      PERFORM bdc_field       USING 'BDC_OKCODE'
+                                    '=VW'.
+      PERFORM bdc_dynpro      USING 'SAPMF02K' '0210'.
+      PERFORM bdc_field       USING 'BDC_CURSOR'
+                                    'LFB1-LNRZE'.
+      PERFORM bdc_field       USING 'BDC_OKCODE'
+                                    '=VW'.
+      PERFORM bdc_field       USING 'LFB1-AKONT'
+                                    wa_lfa1-akont.          "'196300'.
+      PERFORM bdc_field       USING 'LFB1-FDGRV'
+                                    wa_lfa1-fdgrv.          "'A1'.
+      PERFORM bdc_dynpro      USING 'SAPMF02K' '0215'.
+      PERFORM bdc_field       USING 'BDC_CURSOR'
+                                    'LFB1-ZWELS'.
+      PERFORM bdc_field       USING 'BDC_OKCODE'
+                                    '=VW'.
+      PERFORM bdc_dynpro      USING 'SAPMF02K' '0220'.
+      PERFORM bdc_field       USING 'BDC_CURSOR'
+                                    'LFB5-MAHNA'.
+      PERFORM bdc_field       USING 'BDC_OKCODE'
+                                    '=VW'.
+      PERFORM bdc_dynpro      USING 'SAPMF02K' '0310'.
+      PERFORM bdc_field       USING 'BDC_CURSOR'
+                                    'LFM1-WAERS'.
+      PERFORM bdc_field       USING 'BDC_OKCODE'
+                                    '=VW'.
+      PERFORM bdc_field       USING 'LFM1-WAERS'
+                                    'inr'.
+      PERFORM bdc_dynpro      USING 'SAPMF02K' '0320'.
+      PERFORM bdc_field       USING 'BDC_CURSOR'
+                                    'RF02K-LIFNR'.
+      PERFORM bdc_field       USING 'BDC_OKCODE'
+                                    '=VW'.
+      CALL TRANSACTION 'XK01'
+        USING it_bdcdata
+        MODE 'E'
+        UPDATE 'S'
+        MESSAGES INTO it_bdcmsgcoll .
+
+    ENDLOOP.
+  ENDIF.
+
+  PERFORM return_message.
+
+*----------------------------------------------------------------------*
+*        Start new screen                                              *
+*----------------------------------------------------------------------*
+FORM bdc_dynpro USING program dynpro.
+  CLEAR wa_bdcdata.
+  wa_bdcdata-program  = program.
+  wa_bdcdata-dynpro   = dynpro.
+  wa_bdcdata-dynbegin = 'X'.
+  APPEND wa_bdcdata TO it_bdcdata.
+ENDFORM.                    "bdc_dynpro
+
+*----------------------------------------------------------------------*
+*        Insert field                                                  *
+*----------------------------------------------------------------------*
+FORM bdc_field USING fnam fval.
+
+  CLEAR wa_bdcdata.
+  wa_bdcdata-fnam = fnam.
+  wa_bdcdata-fval = fval.
+  APPEND wa_bdcdata TO it_bdcdata.
+ENDFORM.                    "bdc_field
+*&---------------------------------------------------------------------*
+*&      Form  RETURN_MESSAGE
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM return_message .
+  DATA: lf_msg   TYPE string.
+
+  WRITE:/10 'Message Id',
+         35 'Megno',
+         45 'Msg.Type',
+         55 'Message Info' COLOR 3.
+
+  LOOP AT it_bdcmsgcoll INTO wa_bdcmsgcoll.
+
+    CALL FUNCTION 'FORMAT_MESSAGE'
+      EXPORTING
+        id        = wa_bdcmsgcoll-msgid
+        lang      = sy-langu
+        no        = wa_bdcmsgcoll-msgnr
+        v1        = wa_bdcmsgcoll-msgv1
+        v2        = wa_bdcmsgcoll-msgv2
+        v3        = wa_bdcmsgcoll-msgv3
+        v4        = wa_bdcmsgcoll-msgv4
+      IMPORTING
+        msg       = lf_msg
+      EXCEPTIONS
+        not_found = 1
+        OTHERS    = 2.
+
+    IF sy-subrc EQ 0.
+      WRITE:/10 wa_bdcmsgcoll-msgid,
+             35 wa_bdcmsgcoll-msgnr,
+             45 wa_bdcmsgcoll-msgtyp,
+             55 lf_msg COLOR 5.
+    ENDIF.
+
+*    ENDIF.
+
+  ENDLOOP.
+ENDFORM.                    " RETURN_MESSAGE

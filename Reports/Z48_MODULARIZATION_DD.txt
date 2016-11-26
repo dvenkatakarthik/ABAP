@@ -1,0 +1,34 @@
+*&---------------------------------------------------------------------*
+*&  Include           Z48_MODULARIZATION_DD
+*&---------------------------------------------------------------------*
+TYPES: BEGIN OF ty_final,
+          matnr TYPE matnr,
+          mtart TYPE mtart,
+          ntgew TYPE ntgew,
+          mbrsh TYPE mbrsh,
+          maktx TYPE maktx,
+          werks TYPE werks_d,
+          spras TYPE spras,
+        END OF ty_final.
+
+TYPES: BEGIN OF ty_mara,
+          matnr TYPE matnr,
+          mtart TYPE mtart,
+          ntgew TYPE ntgew,
+          mbrsh TYPE mbrsh,
+        END OF ty_mara.
+
+TYPES: BEGIN OF ty_makt,
+          matnr TYPE matnr,
+          maktx TYPE maktx,
+        END OF ty_makt.
+
+DATA: it_mara TYPE STANDARD TABLE OF ty_mara,
+      wa_mara TYPE ty_mara.
+DATA: it_makt TYPE STANDARD TABLE OF ty_makt,
+      wa_makt TYPE ty_makt.
+DATA: it_final TYPE STANDARD TABLE OF ty_final,
+      wa_final TYPE ty_final.
+
+DATA: v_matnr TYPE matnr,
+      v_line TYPE i.

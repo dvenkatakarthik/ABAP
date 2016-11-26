@@ -1,0 +1,29 @@
+*&---------------------------------------------------------------------*
+*& Report  Z48_EVENTS
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z48_events line-count 5(1)
+                   line-size 70 no standard page heading.
+
+
+INITIALIZATION.
+  WRITE:/ 'INITIALIZATION'.
+
+AT SELECTION-SCREEN.
+  WRITE:/ 'AT SELECTION-SCREEN'.
+
+START-OF-SELECTION.
+  WRITE:/ 'START-OF-SELECTION'.
+
+END-OF-SELECTION.
+  WRITE:/ 'END-OF-SELECTION'.
+
+TOP-OF-PAGE.
+  WRITE:/ 'TOP-OF-PAGE'.
+
+END-OF-PAGE.
+  WRITE:/ 'END-OF-PAGE'.

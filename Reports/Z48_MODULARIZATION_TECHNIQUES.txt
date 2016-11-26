@@ -1,0 +1,33 @@
+*&---------------------------------------------------------------------*
+*& Report  Z48_MODULARIZATION_TECHNIQUES
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z48_modularization_techniques.
+
+INCLUDE z48_modularization_dd. " Data Declaration
+INCLUDE z48_modularization_ss. " Selection Screen
+INCLUDE z48_modularization_fd. " Sub Routines
+*&---------------------------------------------------------------------*
+*& INNER JOIN
+*&---------------------------------------------------------------------*
+START-OF-SELECTION.
+  IF p_ij = 'X'.
+    PERFORM inner_join.
+*&---------------------------------------------------------------------*
+*& LEFT OUTER JOIN
+*&---------------------------------------------------------------------*
+  ELSEIF p_oj = 'X'.
+
+    PERFORM outer_join.
+**&---------------------------------------------------------------------*
+**& FOR ALL ENTRIES
+**&---------------------------------------------------------------------*
+  ELSE.
+    PERFORM forall_entries.
+  ENDIF.
+
+*  INCLUDE z48_modularization_techniquf01.

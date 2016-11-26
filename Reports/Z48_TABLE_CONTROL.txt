@@ -1,0 +1,77 @@
+*&---------------------------------------------------------------------*
+*& Module Pool       Z48_TABLE_CONTROL
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+PROGRAM  z48_table_control.
+TABLES: kna1,vbak.
+
+TYPES: BEGIN OF ty_vbak,
+        flag  TYPE c.
+        INCLUDE STRUCTURE vbak.
+TYPES: END OF ty_vbak.
+
+DATA: it_vbak TYPE TABLE OF ty_vbak,
+      wa_vbak TYPE ty_vbak.
+
+DATA: ok_code TYPE sy-ucomm,
+      step_lines TYPE sy-loopc.
+
+*----------------------------------------------------------------------*
+* The CONTROLS statement declares a complex data object with the type
+* TABLEVIEW (corresponding to the type CXTAB_CONTROL, declared in type
+* group CXTAB in the ABAP Dictionary).
+*----------------------------------------------------------------------*
+CONTROLS: tc TYPE TABLEVIEW USING SCREEN '0100'.
+*&---------------------------------------------------------------------*
+*&      Module  STATUS_0100  OUTPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'TABLE_CONTROL'.
+*  SET TITLEBAR 'xxx'.
+
+ENDMODULE.                 " STATUS_0100  OUTPUT
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+  CASE ok_code.
+    WHEN 'DISP'.
+      SELECT * FROM vbak
+       INTO CORRESPONDING FIELDS OF TABLE it_vbak
+        WHERE kunnr = kna1-kunnr.
+    WHEN 'BACK'.
+*    Leave t current screen.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.                 " USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*&      Module  LINES  OUTPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE lines OUTPUT.
+  DESCRIBE TABLE it_vbak LINES step_lines.
+  tc-lines = step_lines.
+ENDMODULE.                 " LINES  OUTPUT
+*&---------------------------------------------------------------------*
+*&      Module  DELETE_LINE  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE delete_line INPUT.
+  CASE ok_code.
+    WHEN 'DELE'.
+*     Delete the selected row(s) from Table Control
+      IF wa_vbak-flag EQ 'X'.
+        DELETE it_vbak WHERE vbeln EQ wa_vbak-vbeln.
+      ENDIF.
+  ENDCASE.
+ENDMODULE.                 " DELETE_LINE  INPUT

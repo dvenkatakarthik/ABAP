@@ -1,0 +1,27 @@
+*&---------------------------------------------------------------------*
+*& Report  Z48_IMP_MEMORY
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z48_imp_memory.
+
+DATA: v_matnr TYPE matnr.
+
+
+GET PARAMETER ID 'SAP_MEMORY' FIELD v_matnr.
+
+WRITE:/ 'AFGER GET:', v_matnr COLOR 5.
+
+
+
+*DATA: it_mara_imp TYPE TABLE OF mara,
+*      wa_mara TYPE mara.
+*
+*IMPORT it_mara_exp TO it_mara_imp FROM MEMORY ID 'ABAP_MEMORY'.
+*
+*LOOP AT it_mara_imp INTO wa_mara.
+*  WRITE:/ wa_mara-matnr,wa_mara-mtart,wa_mara-ntgew,wa_mara-meins.
+*ENDLOOP.

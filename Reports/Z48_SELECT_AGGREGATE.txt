@@ -1,0 +1,80 @@
+*&---------------------------------------------------------------------*
+*& Report  Z48_SELECT_AGGREGATE
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z48_select_aggregate.
+
+TYPES: BEGIN OF ty_mat,
+         matnr  TYPE  matnr,
+         ntgew  TYPE  ntgew,
+       END OF ty_mat.
+
+DATA: it_mat   TYPE STANDARD TABLE OF ty_mat,
+      wa_mat   TYPE ty_mat.
+
+
+DATA: v_matnr TYPE matnr,
+      v_ntgew TYPE ntgew.
+
+SELECT-OPTIONS: s_mantr FOR v_matnr.
+
+*SELECT - aggregate.
+DATA : v_a TYPE i.
+*
+*SELECT COUNT( DISTINCT matnr ) FROM mara INTO v_a
+*    WHERE matnr IN s_mantr.
+*
+*WRITE:/ 'Count of MARA:', v_a COLOR 5.
+*
+SELECT sum( ntgew ) FROM mara INTO v_ntgew
+  WHERE matnr IN s_mantr.
+
+select sum( ntgew ) count( distinct matnr )
+  from mara into (v_ntgew,v_a)
+  where matnr in s_mantr.
+skip 2.
+write:/ 'Count of MARA:', v_a color 5.
+write:/ 'SUM VALUE:', v_ntgew color 6.
+
+*
+*SELECT matnr ntgew FROM mara INTO TABLE it_mat
+*  WHERE matnr IN s_mantr
+*    AND ntgew NE '0.000'.
+*
+*LOOP AT it_mat INTO wa_mat.
+*  WRITE:/ wa_mat-matnr, wa_mat-ntgew.
+*ENDLOOP.
+
+
+*TYPES: BEGIN OF ty_marc,
+*           matnr TYPE matnr,
+*           werks TYPE werks_d,
+*       END OF ty_marc.
+*
+*DATA: it_marc TYPE STANDARD TABLE OF ty_marc,
+*      wa_marc TYPE ty_marc.
+*
+*
+*SELECT matnr
+*       werks
+*  FROM marc
+*INTO TABLE it_marc
+*WHERE matnr IN s_mantr "and werks = p_werks.
+*      AND werks IN ('3000','3010','3100','3200')
+** GROUP BY werks matnr
+**  HAVING werks IN ('3000','3010','3100','3200')
+*  ORDER BY matnr ASCENDING werks DESCENDING.
+**
+***delete it_marc where matnr = p_matnr.
+**
+*IF sy-subrc = 0.
+*  WRITE: 'SY-DBCNT',sy-dbcnt.
+*
+*  LOOP AT it_marc INTO wa_marc.
+*    WRITE:/ wa_marc-matnr,wa_marc-werks.
+*  ENDLOOP.
+*ENDIF.

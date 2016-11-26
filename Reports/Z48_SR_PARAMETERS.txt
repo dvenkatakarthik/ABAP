@@ -1,0 +1,87 @@
+*&---------------------------------------------------------------------*
+*& Report  Z48_SR_PARAMETERS
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z48_sr_parameters.
+
+DATA: v_n1 TYPE i VALUE 10,
+      v_n2 TYPE i VALUE 20,
+      result TYPE i.
+
+
+
+result = v_n1 + v_n2.
+WRITE:/ 'Before: value of Result is:', result.
+
+PERFORM call_by_value USING v_n1 v_n2.
+result = v_n1 + v_n2.
+WRITE:/ 'After Call by Value: value of Result is:', result.
+
+PERFORM call_by_ref USING v_n1 v_n2.
+result = v_n1 + v_n2.
+WRITE:/ 'After Call by Ref: value of Result is:', result.
+*&---------------------------------------------------------------------*
+*&      Form  CALL_BY_VALUE
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_V_N1  text
+*      -->P_V_N2  text
+*----------------------------------------------------------------------*
+FORM call_by_value  USING value(p_v_n1)
+                          value(p_v_n2).
+
+
+  p_v_n1 = 50.
+  p_v_n2 = 60.
+
+
+ENDFORM.                    " CALL_BY_VALUE
+*&---------------------------------------------------------------------*
+*&      Form  CALL_BY_REF
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_V_N1  text
+*      -->P_V_N2  text
+*----------------------------------------------------------------------*
+FORM call_by_ref  USING    p_v_n1
+                           p_v_n2.
+  p_v_n1 = 50.
+  p_v_n2 = 60.
+
+ENDFORM.                    " CALL_BY_REF
+
+
+
+************************************************************************
+*
+*DATA: num  TYPE i VALUE 5,
+*      fac  TYPE i VALUE 0.
+*
+*PERFORM fact USING num CHANGING fac.
+*WRITE: / 'Factorial of', num, 'is:', fac color 7.
+**&---------------------------------------------------------------------
+*
+**&      Form  fact
+**&---------------------------------------------------------------------
+*
+**       text
+**----------------------------------------------------------------------
+*
+**      -->VALUE(F_NUM)  text
+**      -->F_FACT        text
+**----------------------------------------------------------------------
+*
+*FORM fact USING value(f_num)
+*          CHANGING f_fact.
+*  f_fact = 1.
+*  WHILE f_num GE 1.
+*    f_fact = f_fact * f_num.
+*    f_num = f_num - 1.
+*  ENDWHILE.
+*ENDFORM.                    "fact

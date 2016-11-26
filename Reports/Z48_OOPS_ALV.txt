@@ -1,0 +1,244 @@
+*&---------------------------------------------------------------------*
+*& Report  Z48_OOPS_ALV
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z48_oops_alv.
+*data: it_lfa1 type standard table of
+TYPES: BEGIN OF ty_po,
+          ebeln TYPE ebeln,
+          lifnr TYPE elifn,
+          ekorg TYPE ekorg,
+          ekgrp TYPE ekgrp,
+          werks TYPE ewerk,
+          ebelp TYPE ebelp,
+          matnr TYPE matnr,
+          menge TYPE bstmg,
+          netpr TYPE bprei,
+        END OF ty_po.
+
+
+*----------------------------------------------------------------------*
+*----  Data  ----------------------------------------------------------*
+*----------------------------------------------------------------------*
+
+DATA: it_po     TYPE STANDARD TABLE OF ty_po,
+      wa_po     TYPE ty_po.
+
+
+DATA : lt_fieldcatalog TYPE TABLE OF lvc_s_fcat,
+       lw_fieldcat     TYPE lvc_s_fcat.
+
+
+DATA: gcl_custom_container TYPE REF TO cl_gui_custom_container,
+      gf_cont_for_output   TYPE scrfname VALUE 'ALV',
+      gcl_grid             TYPE REF TO cl_gui_alv_grid.
+
+DATA: colno TYPE i.
+
+SELECT-OPTIONS: s_lifnr FOR wa_po-lifnr,
+                s_ebeln FOR wa_po-ebeln.
+
+START-OF-SELECTION.
+
+  SELECT a~ebeln
+           lifnr
+           ekorg
+           ekgrp
+           werks
+           ebelp
+           matnr
+           menge
+           netpr
+    INTO TABLE it_po
+    FROM ekko AS a INNER JOIN ekpo AS b
+    ON a~ebeln = b~ebeln
+    WHERE a~lifnr IN s_lifnr
+      AND a~ebeln IN s_ebeln.
+
+END-OF-SELECTION.
+
+  IF it_po IS NOT INITIAL.
+    PERFORM create_container.
+*    PERFORM fill_layout.
+*    PERFORM events.
+*    PERFORM grid_display.
+  ENDIF.
+*&---------------------------------------------------------------------*
+*&      Form  CREATE_CONTAINER
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM create_container .
+
+  CALL SCREEN 100.
+
+ENDFORM.                    " CREATE_CONTAINER
+*&---------------------------------------------------------------------*
+*&      Module  STATUS_0100  OUTPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'ABAP48'.
+*  SET TITLEBAR 'xxx'.
+
+ENDMODULE.                 " STATUS_0100  OUTPUT
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+  CASE sy-ucomm.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.                 " USER_COMMAND_0100  INPUT
+
+*&---------------------------------------------------------------------*
+*&      Module  BUILD_CATALOG  OUTPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE build_catalog OUTPUT.
+  colno = colno + 1.
+  lw_fieldcat-col_pos   = colno.
+  lw_fieldcat-fieldname = 'EBELN'.
+  lw_fieldcat-coltext = 'PURCHASE ORDERR NO'.
+  lw_fieldcat-tabname   = 'IT_PO'.
+  lw_fieldcat-key       = 'X'.
+  APPEND lw_fieldcat TO lt_fieldcatalog.
+  CLEAR lw_fieldcat.
+
+  colno = colno + 1.
+  lw_fieldcat-col_pos   = colno.
+  lw_fieldcat-fieldname = 'LIFNR'.
+  lw_fieldcat-tabname   = 'IT_PO'.
+  lw_fieldcat-coltext = 'VENDOR NO'.
+  lw_fieldcat-key       = 'X'.
+  APPEND lw_fieldcat TO lt_fieldcatalog.
+  CLEAR lw_fieldcat.
+
+  colno = colno + 1.
+  lw_fieldcat-col_pos   = colno.
+  lw_fieldcat-fieldname = 'EKORG'.
+  lw_fieldcat-coltext = 'PURCHASE ORGANISATION'.
+  lw_fieldcat-tabname   = 'IT_PO'.
+  APPEND lw_fieldcat TO lt_fieldcatalog.
+  CLEAR lw_fieldcat.
+
+  colno = colno + 1.
+  lw_fieldcat-col_pos   = colno.
+  lw_fieldcat-fieldname = 'EKGRP'.
+  lw_fieldcat-coltext = 'PURCHASE GROUP'.
+  lw_fieldcat-tabname   = 'IT_PO'.
+  APPEND lw_fieldcat TO lt_fieldcatalog.
+  CLEAR lw_fieldcat.
+
+
+  colno = colno + 1.
+  lw_fieldcat-col_pos   = colno.
+  lw_fieldcat-fieldname = 'WERKS'.
+  lw_fieldcat-coltext   = 'PLANT'.
+  lw_fieldcat-tabname   = 'IT_PO'.
+  APPEND lw_fieldcat TO lt_fieldcatalog.
+  CLEAR lw_fieldcat.
+
+  colno = colno + 1.
+  lw_fieldcat-col_pos   = colno.
+  lw_fieldcat-fieldname = 'EBELP'.
+  lw_fieldcat-coltext   = 'PURCHASE ITEM NO'.
+  lw_fieldcat-tabname   = 'IT_PO'.
+  APPEND lw_fieldcat TO lt_fieldcatalog.
+  CLEAR lw_fieldcat.
+
+  colno = colno + 1.
+  lw_fieldcat-col_pos   = colno.
+  lw_fieldcat-fieldname = 'MATNR'.
+  lw_fieldcat-coltext   = 'MATERIAL.NUMBER'.
+  lw_fieldcat-tabname   = 'IT_PO'.
+  APPEND lw_fieldcat TO lt_fieldcatalog.
+  CLEAR lw_fieldcat.
+
+  colno = colno + 1.
+  lw_fieldcat-col_pos   = colno.
+  lw_fieldcat-fieldname = 'MENGE'.
+  lw_fieldcat-do_sum    = 'X'.
+  lw_fieldcat-coltext   = 'PURCHASE ORDER QUANTITY'.
+  lw_fieldcat-tabname   = 'IT_PO'.
+  APPEND lw_fieldcat TO lt_fieldcatalog.
+  CLEAR lw_fieldcat.
+
+  colno = colno + 1.
+  lw_fieldcat-col_pos   = colno.
+  lw_fieldcat-fieldname = 'NETPR'.
+  lw_fieldcat-coltext   = 'NET PRICE'.
+  lw_fieldcat-do_sum    = 'X'.
+  lw_fieldcat-currency  = 'INR'.
+  lw_fieldcat-tabname   = 'IT_PO'.
+  APPEND lw_fieldcat TO lt_fieldcatalog.
+  CLEAR lw_fieldcat.
+ENDMODULE.                 " BUILD_CATALOG  OUTPUT
+*&---------------------------------------------------------------------*
+*&      Module  ALV_DISPLAY  OUTPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE alv_display OUTPUT.
+***Create an object for Container.
+  CREATE OBJECT gcl_custom_container
+    EXPORTING
+      container_name              = gf_cont_for_output
+    EXCEPTIONS
+      cntl_error                  = 1
+      cntl_system_error           = 2
+      create_error                = 3
+      lifetime_error              = 4
+      lifetime_dynpro_dynpro_link = 5.
+
+***Create an object for GRID Display.
+  CREATE OBJECT gcl_grid
+    EXPORTING
+      i_parent = gcl_custom_container.
+
+  CALL METHOD gcl_grid->set_table_for_first_display
+    EXPORTING
+*      i_buffer_active               =
+*      i_bypassing_buffer            =
+*      i_consistency_check           =
+*      i_structure_name              =
+*      is_variant                    =
+      i_save                        = 'A'
+      i_default                     = 'X'
+*      is_layout                     =
+*      is_print                      =
+*      it_special_groups             =
+*      it_toolbar_excluding          =
+*      it_hyperlink                  =
+*      it_alv_graphics               =
+*      it_except_qinfo               =
+*      ir_salv_adapter               =
+    CHANGING
+      it_outtab                     =  it_po
+      it_fieldcatalog               =  lt_fieldcatalog
+*      it_sort                       =
+*      it_filter                     =
+    EXCEPTIONS
+      invalid_parameter_combination = 1
+      program_error                 = 2
+      too_many_lines                = 3
+      OTHERS                        = 4
+          .
+  IF sy-subrc <> 0.
+    MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+               WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+  ENDIF.
+
+ENDMODULE.                 " ALV_DISPLAY  OUTPUT

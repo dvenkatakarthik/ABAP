@@ -1,0 +1,9 @@
+*&---------------------------------------------------------------------*
+*&  Include           Z48_MODULARIZATION_SS
+*&---------------------------------------------------------------------*
+SELECT-OPTIONS: s_matnr FOR v_matnr,
+                s_mtart FOR wa_final-mtart NO-EXTENSION NO INTERVALS.
+
+PARAMETERS: p_ij TYPE c RADIOBUTTON GROUP g1,
+            p_oj TYPE c RADIOBUTTON GROUP g1,
+            p_fe TYPE c RADIOBUTTON GROUP g1.

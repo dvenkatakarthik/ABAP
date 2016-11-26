@@ -1,0 +1,142 @@
+*&---------------------------------------------------------------------*
+*& Module Pool Z48_SET_SCREEN
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+PROGRAM  z48_set_screen.
+TABLES marc.
+
+DATA: it_marc TYPE TABLE OF marc,
+      wa_marc TYPE marc.
+
+DATA: ok_code TYPE sy-ucomm.
+
+DATA: pstat TYPE pstat_d.
+*&---------------------------------------------------------------------*
+*&      Module  STATUS_0100  OUTPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'ABAP48'.
+*  SET TITLEBAR 'xxx'.
+
+ENDMODULE.                 " STATUS_0100  OUTPUT
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+  CASE ok_code.
+    WHEN 'DISP'.
+      SELECT SINGLE * FROM marc
+        INTO wa_marc
+        WHERE matnr = marc-matnr
+          AND werks = marc-werks.
+*     Sets the Next Screen to 200.
+      SET SCREEN 200.
+*     Leave the crrent screen and move to the screen 200.
+      LEAVE SCREEN.
+***     The below code does not execute
+    WHEN 'EXIT'.
+*     Leave the current program.
+      LEAVE PROGRAM.
+    WHEN 'BACK'.
+*     Leave the current screen
+      LEAVE TO SCREEN 0.
+    WHEN 'CANCEL'.
+*     Leave the current screen
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+
+
+ENDMODULE.                 " USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*&      Module  STATUS_0200  OUTPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE status_0200 OUTPUT.
+  SET PF-STATUS 'ABAP48'.
+*  SET TITLEBAR 'xxx'.
+
+ENDMODULE.                 " STATUS_0200  OUTPUT
+*&---------------------------------------------------------------------*
+*&      Module  FILL_DATA  OUTPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE fill_data OUTPUT.
+
+  marc-matnr  = wa_marc-matnr.
+  marc-werks  = wa_marc-werks.
+  marc-pstat  = wa_marc-pstat.
+  marc-bwtty  = wa_marc-bwtty.
+
+ENDMODULE.                 " FILL_DATA  OUTPUT
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0200  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0200 INPUT.
+  CASE sy-ucomm.
+    WHEN 'EXIT'.
+*     Leave the current program.
+      LEAVE PROGRAM.
+    WHEN 'BACK'.
+*     Leave the current screen
+      LEAVE TO SCREEN 100.
+    WHEN 'CANCEL'.
+*     Leave the current screen
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.                 " USER_COMMAND_0200  INPUT
+*&---------------------------------------------------------------------*
+*&      Module  EXIT_SCREEN  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE exit_screen INPUT.
+  CASE ok_code.
+    WHEN 'EXIT'.
+*     Leave the current program.
+      LEAVE PROGRAM.
+  ENDCASE.
+ENDMODULE.                 " EXIT_SCREEN  INPUT
+*&---------------------------------------------------------------------*
+*&      Module  CHECK_PSTAT  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE check_pstat INPUT.
+  IF ok_code = 'DISP'.
+    SELECT SINGLE pstat FROM marc
+      INTO pstat
+      WHERE pstat = pstat.
+
+    IF  sy-subrc NE 0.
+      MESSAGE e000(z48_abap) WITH 'Maintenance status is Invalid'.
+    ENDIF.
+  ENDIF.
+ENDMODULE.                 " CHECK_PSTAT  INPUT
+*&---------------------------------------------------------------------*
+*&      Module  CHECK_MATERIAL  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE check_material INPUT.
+  CASE sy-ucomm.
+    WHEN 'DISP'.
+      SELECT SINGLE matnr INTO marc-matnr
+      FROM marc
+      WHERE matnr EQ marc-matnr.
+      IF sy-subrc NE 0.
+        MESSAGE e000(z48_abap) WITH 'Material number is Invalid'.
+      ENDIF.
+  ENDCASE.
+ENDMODULE.                 " CHECK_MATERIAL  INPUT

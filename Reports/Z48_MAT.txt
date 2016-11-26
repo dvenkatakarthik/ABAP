@@ -1,0 +1,35 @@
+*****           Implementation of object type Z48_MAT              *****
+INCLUDE <OBJECT>.
+BEGIN_DATA OBJECT. " Do not change.. DATA is generated
+* only private members may be inserted into structure private
+DATA:
+" begin of private,
+"   to declare private attributes remove comments and
+"   insert private attributes here ...
+" end of private,
+      KEY LIKE SWOTOBJID-OBJKEY.
+END_DATA OBJECT. " Do not change.. DATA is generated
+
+BEGIN_METHOD ZBAPIMATERIAL CHANGING CONTAINER.
+DATA:
+      BAPIMATNR TYPE ZBAPI_46-MATNR,
+      RETURN LIKE BAPIRET2,
+      BAPIMAT LIKE ZBAPI_46 OCCURS 0.
+  SWC_GET_ELEMENT CONTAINER 'BapiMatnr' BAPIMATNR.
+  SWC_GET_TABLE CONTAINER 'BapiMat' BAPIMAT.
+  CALL FUNCTION 'ZBAPI_48_MATERIAL'
+    EXPORTING
+      BAPI_MATNR = BAPIMATNR
+    IMPORTING
+      RETURN = RETURN
+    TABLES
+      BAPI_MAT = BAPIMAT
+    EXCEPTIONS
+      OTHERS = 01.
+  CASE SY-SUBRC.
+    WHEN 0.            " OK
+    WHEN OTHERS.       " to be implemented
+  ENDCASE.
+  SWC_SET_ELEMENT CONTAINER 'Return' RETURN.
+  SWC_SET_TABLE CONTAINER 'BapiMat' BAPIMAT.
+END_METHOD.

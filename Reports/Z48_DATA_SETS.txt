@@ -1,0 +1,146 @@
+*&---------------------------------------------------------------------*
+*& Report  Z48_DATA_SETS
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+REPORT  z48_data_sets.
+*& OPEN DATASET Statement :                                         *
+*& To open a file on the application server, use the OPEN DATASET   *
+*& statement as follows:                                            *
+*& OPEN DATASET <dsn> [Additions].                                  *
+*& This statement opens the file <dsn>. If you do not specify any   *
+*& additions for the mode, the file is opened in binary mode for    *
+*& reading. SY-SUBRC returns 0 if the system opens the file.Otherwise,*
+*& SY-SUBRC is set to 8.                                            *
+*&                                                                  *
+*& Opening a File for Read Access :                                 *
+*& To open a file for reading, use the FOR INPUT addition to the OPEN
+*
+*& DATASET statement.                                               *
+*& OPEN DATASET <dsn> FOR INPUT.                                    *
+*& The file must already exist, otherwise, the system sets SY-SUBRC *
+*& to 8, and ignores the statement.                                 *
+*&                                                                  *
+*& Opening a File for Appending Data :                              *
+*& To open a file and append data to the end of it, use the FOR     *
+*& APPENDING addition in the OPEN DATASET statement:                *
+*& OPEN DATASET <dsn> FOR APPENDING.                                *
+*& This statement opens a file to which you can append data.        *
+*& If the file does not already exist, it is created automatically. *
+*&                                                                  *
+*& Opening a File for Write Access :                                *
+*& To open a file for writing, use the FOR OUTPUT addition to the OPEN
+*
+*& DATASET statement.                                               *
+*& OPEN DATASET <dsn> FOR OUTPUT.                                   *
+*& If the file does not already exist, it is created automatically. *
+*& If it does already exist, but is closed, its contents are overwritten
+*&                                                                  *
+*& Using Binary Mode :                                              *
+*& To open a file in binary mode, use the IN BINARY MODE addition to the
+*& OPEN DATASET statement.                                          *
+*& OPEN DATASET <dsn> IN BINARY MODE [FOR ....].                    *
+*& If you read from or write to a file that is open in binary mode, the*
+*& data is transferred byte by byte.                                *
+*&
+*& Using Text Mode :                                                *
+*& To open a file in text mode, use the IN TEXT MODE addition to the*
+*& OPEN DATASET statement.                                          *
+*& OPEN DATASET <dsn> FOR .... IN TEXT MODE.                        *
+*&------------------------------------------------------------------*
+
+*& Writing Data to Files :                                          *
+*& To write data to a file on the application server, use the TRANSFER
+*& statement:                                                       *
+*& TRANSFER <f> to <dsn> [LENGTH <len>].                            *
+*&------------------------------------------------------------------*
+*& Reading Data from Files :                                        *
+*& To read data from a file on the application server, use the READ *
+*& DATASET statement:                                               *
+*& READ DATASET <dsn> INTO <f> [LENGTH <len>].                      *
+*&------------------------------------------------------------------*
+*& Closing a File :                                                 *
+*& CLOSE DATASET <dsn>.                                             *
+*& This statement closes the file <dsn>.                            *
+*&------------------------------------------------------------------*
+*&                             TYPES
+*&---------------------------------------------------------------------*
+TYPES: BEGIN OF tw_mara,
+        matnr TYPE matnr,         "Material Number
+        mtart TYPE mtart,         "Material Type
+        meins TYPE meins,         "Base Unit of Measure
+       END OF tw_mara.
+*&---------------------------------------------------------------------*
+*&                             DATA
+*&---------------------------------------------------------------------*
+DATA: it_mara TYPE STANDARD TABLE OF tw_mara,
+      wa_mara TYPE tw_mara.
+
+DATA: gf_matnr TYPE mara-matnr.
+
+*&---------------------------------------------------------------------*
+*&                     SELECTION-SCREEN
+*&---------------------------------------------------------------------*
+* Material Info
+SELECTION-SCREEN BEGIN OF BLOCK bk1 WITH FRAME TITLE text-001.
+SELECT-OPTIONS : so_matnr FOR gf_matnr.
+SELECTION-SCREEN END OF BLOCK bk1.
+* File Details
+SELECTION-SCREEN BEGIN OF BLOCK bk2 WITH FRAME TITLE text-002.
+PARAMETERS: pa_fpath TYPE char10. "rlgrap-filename.
+SELECTION-SCREEN END OF BLOCK bk2.
+
+*&---------------------------------------------------------------------*
+*&                     START-OF-SELECTION
+*&---------------------------------------------------------------------*
+START-OF-SELECTION.
+*** Fetch data from MARA table
+  SELECT matnr mtart meins INTO TABLE it_mara
+  FROM mara
+  WHERE matnr IN so_matnr.
+* If no data found for the given selection.
+  IF sy-subrc NE 0.
+    MESSAGE i000(z46_abap) WITH 'No data found'.
+    LEAVE TO LIST-PROCESSING.
+  ENDIF.
+
+* Open the dataset in Text Mode
+* If you read from or write to a file that is open in text mode, the
+* data is transferred line by line. The system assumes that the file
+* has a line structure.
+  OPEN DATASET pa_fpath FOR OUTPUT IN TEXT MODE ENCODING DEFAULT.
+*  OPEN DATASET pa_fpath FOR OUTPUT IN BINARY MODE.
+*  OPEN DATASET pa_fpath FOR APPENDING IN TEXT MODE ENCODING DEFAULT.
+  IF sy-subrc = 0.
+    LOOP AT it_mara INTO wa_mara.
+*     Write the data into the file
+      TRANSFER wa_mara TO pa_fpath.
+    ENDLOOP.
+    WRITE:/ 'Dataset',pa_fpath COLOR 6, 'Created and & data trasferd'.
+  ELSE.
+    WRITE :/ 'Error while opening the file'.
+* Close the dataset
+    CLOSE DATASET pa_fpath.
+  ENDIF.
+
+
+*** Open the dataset for reading the file.
+**  OPEN DATASET pa_fpath FOR INPUT IN TEXT MODE ENCODING DEFAULT.
+*  OPEN DATASET pa_fpath FOR INPUT IN BINARY MODE.
+*  IF sy-subrc EQ 0.
+** Read data from the file existing in the App. Server
+*    DO.
+*      READ DATASET pa_fpath INTO wa_mara.
+*      IF sy-subrc NE 0.
+**       If no data found in File, then exit from DO.. ENDDO.
+*        EXIT.
+*      ENDIF.
+*      WRITE:/ wa_mara-matnr,wa_mara-meins,wa_mara-mtart.
+*    ENDDO.
+*  ELSE.
+*    WRITE :/ 'Error while opening the file'.
+*  ENDIF.
+** Close the dataset
+*  CLOSE DATASET pa_fpath.

@@ -1,0 +1,192 @@
+*&---------------------------------------------------------------------*
+*& Report  Z48_SCRIPT_SALEORDER
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z48_script_saleorder.
+
+*&---------------------------------------------------------------------*
+*&                       TYPES                                         *
+*&---------------------------------------------------------------------*
+
+TYPES : BEGIN OF tw_vbak,
+        vbeln TYPE   vbeln_va,
+        vkorg TYPE   vkorg,
+        vtweg TYPE   vtweg,
+        END OF tw_vbak,
+        tt_vbak TYPE STANDARD TABLE OF tw_vbak.
+
+TYPES : BEGIN OF tw_vbap,
+        vbeln TYPE vbeln_va,
+        posnr TYPE posnr_va,
+        matnr TYPE matnr,
+        END OF tw_vbap,
+        tt_vbap TYPE STANDARD TABLE OF tw_vbap.
+
+*&---------------------------------------------------------------------*
+*&                       DATA                                          *
+*&---------------------------------------------------------------------*
+
+DATA: lt_vbak TYPE tt_vbak,
+      lw_vbak TYPE tw_vbak,
+      lt_vbap TYPE tt_vbap,
+      lw_vbap TYPE tw_vbap,
+      gf_so_vbeln TYPE vbak-vbeln.
+
+*&---------------------------------------------------------------------*
+*&                       SELECTION-SCREEN                              *
+*&---------------------------------------------------------------------*
+
+SELECTION-SCREEN BEGIN OF BLOCK bk1 WITH FRAME TITLE text-001.
+
+SELECT-OPTIONS: so_vbeln FOR gf_so_vbeln.
+
+SELECTION-SCREEN END OF BLOCK bk1.
+
+*&---------------------------------------------------------------------*
+*&                       START-OF-SELECTION                            *
+*&---------------------------------------------------------------------*
+
+START-OF-SELECTION.
+  PERFORM fr_get_data.
+  PERFORM fr_open_form.
+  PERFORM fr_display_data.
+  PERFORM fr_close_form.
+
+*&--------------------------------------------------------------------*
+*&      Form  fr_get_data
+*&--------------------------------------------------------------------*
+FORM fr_get_data.
+
+* Header Data
+  SELECT vbeln vkorg vtweg INTO TABLE lt_vbak
+  FROM vbak
+  WHERE vbeln IN so_vbeln.
+
+* Item Data
+  IF NOT lt_vbak[] IS INITIAL.
+    SELECT vbeln posnr matnr INTO TABLE lt_vbap
+    FROM vbap
+    FOR ALL ENTRIES IN lt_vbak
+    WHERE vbeln EQ lt_vbak-vbeln.
+  ENDIF.
+ENDFORM.                    "fr_get_data
+*&---------------------------------------------------------------------*
+*&      Form  fr_open_form
+*&---------------------------------------------------------------------*
+FORM fr_open_form .
+  CALL FUNCTION 'OPEN_FORM'
+    EXPORTING
+      form                        = 'Z48_SALE_ORDER'
+      language                    = sy-langu
+    EXCEPTIONS
+      canceled                    = 1
+      device                      = 2
+      form                        = 3
+      OPTIONS                     = 4
+      unclosed                    = 5
+      mail_options                = 6
+      archive_error               = 7
+      invalid_fax_number          = 8
+      more_params_needed_in_batch = 9
+      spool_error                 = 10
+      codepage                    = 11
+      OTHERS                      = 12.
+  IF sy-subrc <> 0.
+* MESSAGE ID SY-MSGID TYPE SY-MSGTY NUMBER SY-MSGNO
+*         WITH SY-MSGV1 SY-MSGV2 SY-MSGV3 SY-MSGV4.
+  ENDIF.
+ENDFORM.                    " fr_open_form
+*&---------------------------------------------------------------------*
+*&      Form  fr_display_data
+*&---------------------------------------------------------------------*
+FORM fr_display_data .
+  LOOP AT lt_vbak INTO lw_vbak.
+
+    CALL FUNCTION 'WRITE_FORM'
+      EXPORTING
+        element                  = 'HEADER'
+        window                   = 'MAIN'
+        type                     = 'BODY'
+      EXCEPTIONS
+        element                  = 1
+        function                 = 2
+        type                     = 3
+        unopened                 = 4
+        unstarted                = 5
+        window                   = 6
+        bad_pageformat_for_print = 7
+        spool_error              = 8
+        codepage                 = 9
+        OTHERS                   = 10.
+    IF sy-subrc <> 0.
+* MESSAGE ID SY-MSGID TYPE SY-MSGTY NUMBER SY-MSGNO
+*         WITH SY-MSGV1 SY-MSGV2 SY-MSGV3 SY-MSGV4.
+    ENDIF.
+    LOOP AT lt_vbap INTO lw_vbap WHERE vbeln = lw_vbak-vbeln.
+      CALL FUNCTION 'WRITE_FORM'
+        EXPORTING
+          element                  = 'ITEM'
+          window                   = 'MAIN'
+          type                     = 'BODY'
+        EXCEPTIONS
+          element                  = 1
+          function                 = 2
+          type                     = 3
+          unopened                 = 4
+          unstarted                = 5
+          window                   = 6
+          bad_pageformat_for_print = 7
+          spool_error              = 8
+          codepage                 = 9
+          OTHERS                   = 10.
+      IF sy-subrc <> 0.
+* MESSAGE ID SY-MSGID TYPE SY-MSGTY NUMBER SY-MSGNO
+*         WITH SY-MSGV1 SY-MSGV2 SY-MSGV3 SY-MSGV4.
+      ENDIF.
+
+      CALL FUNCTION 'WRITE_FORM'
+        EXPORTING
+          element                  = 'SCHEDULE'
+          window                   = 'MAIN'
+          type                     = 'BODY'
+        EXCEPTIONS
+          element                  = 1
+          function                 = 2
+          type                     = 3
+          unopened                 = 4
+          unstarted                = 5
+          window                   = 6
+          bad_pageformat_for_print = 7
+          spool_error              = 8
+          codepage                 = 9
+          OTHERS                   = 10.
+      IF sy-subrc <> 0.
+* MESSAGE ID SY-MSGID TYPE SY-MSGTY NUMBER SY-MSGNO
+*         WITH SY-MSGV1 SY-MSGV2 SY-MSGV3 SY-MSGV4.
+      ENDIF.
+    ENDLOOP.
+  ENDLOOP.
+ENDFORM.                    " fr_display_data
+*&---------------------------------------------------------------------*
+*&      Form  fr_close_form
+*&---------------------------------------------------------------------*
+FORM fr_close_form .
+  CALL FUNCTION 'CLOSE_FORM'
+    EXCEPTIONS
+      unopened                 = 1
+      bad_pageformat_for_print = 2
+      send_error               = 3
+      spool_error              = 4
+      codepage                 = 5
+      OTHERS                   = 6.
+
+  IF sy-subrc <> 0.
+* MESSAGE ID SY-MSGID TYPE SY-MSGTY NUMBER SY-MSGNO
+*         WITH SY-MSGV1 SY-MSGV2 SY-MSGV3 SY-MSGV4.
+  ENDIF.
+
+ENDFORM.                    " fr_close_form

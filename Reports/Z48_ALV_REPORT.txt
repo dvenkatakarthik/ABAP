@@ -1,0 +1,386 @@
+*&---------------------------------------------------------------------*
+*& Report  Z48_ALV_REPORT
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z48_alv_report.
+
+TYPE-POOLS: slis.
+
+*data: it_lfa1 type standard table of
+TYPES: BEGIN OF ty_po,
+          ebeln TYPE ebeln,
+          lifnr TYPE elifn,
+          ekorg TYPE ekorg,
+          ekgrp TYPE ekgrp,
+          werks TYPE ewerk,
+          ebelp TYPE ebelp,
+          matnr TYPE matnr,
+          menge TYPE bstmg,
+          netpr TYPE bprei,
+       END OF ty_po.
+
+
+DATA: it_po     TYPE STANDARD TABLE OF ty_po,
+      wa_po     TYPE ty_po.
+*&---------------------------------------------------------------------*
+*& ALV DECLARATIONS
+*&---------------------------------------------------------------------*
+DATA: it_fcat     TYPE slis_t_fieldcat_alv,
+      wa_fcat     TYPE slis_fieldcat_alv,
+      it_event    TYPE slis_t_event,
+      wa_event    TYPE slis_alv_event,
+      wa_layout   TYPE slis_layout_alv,
+      it_listhead TYPE slis_t_listheader,
+      wa_listhead TYPE slis_listheader,
+      it_sort     TYPE slis_t_sortinfo_alv,
+      wa_sort     TYPE slis_sortinfo_alv.
+
+DATA: colno TYPE i.
+
+
+SELECT-OPTIONS: s_lifnr FOR wa_po-lifnr,
+                s_ebeln FOR wa_po-ebeln.
+
+START-OF-SELECTION.
+
+  SELECT a~ebeln
+           lifnr
+           ekorg
+           ekgrp
+           werks
+           ebelp
+           matnr
+           menge
+           netpr
+    INTO TABLE it_po
+    FROM ekko AS a INNER JOIN ekpo AS b
+    ON a~ebeln = b~ebeln
+    WHERE a~lifnr IN s_lifnr
+      AND a~ebeln IN s_ebeln.
+
+END-OF-SELECTION.
+
+  IF it_po IS NOT INITIAL.
+    PERFORM field_cat.
+*    PERFORM fill_layout.
+*    PERFORM events.
+    PERFORM grid_display.
+  ENDIF.
+
+*&---------------------------------------------------------------------*
+*&      Form  FIELD_CAT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM field_cat .
+
+  colno = colno + 1.
+  wa_fcat-col_pos   = colno.
+  wa_fcat-fieldname = 'EBELN'.
+  wa_fcat-seltext_l = 'PURCHASE ORDERR NO'.
+  wa_fcat-tabname   = 'IT_PO'.
+*  wa_fcat-key       = 'X'.
+  APPEND wa_fcat TO it_fcat.
+  CLEAR wa_fcat.
+
+  colno = colno + 1.
+  wa_fcat-col_pos   = colno.
+  wa_fcat-fieldname = 'LIFNR'.
+  wa_fcat-tabname   = 'IT_PO'.
+  wa_fcat-seltext_l = 'VENDOR NO'.
+*  wa_fcat-key       = 'X'.
+  APPEND wa_fcat TO it_fcat.
+  CLEAR wa_fcat.
+
+  colno = colno + 1.
+  wa_fcat-col_pos   = colno.
+  wa_fcat-fieldname = 'EKORG'.
+  wa_fcat-seltext_l = 'PURCHASE ORGANISATION'.
+  wa_fcat-tabname   = 'IT_PO'.
+  APPEND wa_fcat TO it_fcat.
+  CLEAR wa_fcat.
+
+  colno = colno + 1.
+  wa_fcat-col_pos   = colno.
+  wa_fcat-fieldname = 'EKGRP'.
+  wa_fcat-seltext_l = 'PURCHASE GROUP'.
+  wa_fcat-tabname   = 'IT_PO'.
+  APPEND wa_fcat TO it_fcat.
+  CLEAR wa_fcat.
+
+
+  colno = colno + 1.
+  wa_fcat-col_pos   = colno.
+  wa_fcat-fieldname = 'WERKS'.
+  wa_fcat-seltext_s = 'PLANT'.
+  wa_fcat-tabname   = 'IT_PO'.
+  APPEND wa_fcat TO it_fcat.
+  CLEAR wa_fcat.
+
+  colno = colno + 1.
+  wa_fcat-col_pos   = colno.
+  wa_fcat-fieldname = 'EBELP'.
+  wa_fcat-seltext_l = 'PURCHASE ITEM NO'.
+  wa_fcat-tabname   = 'IT_PO'.
+  APPEND wa_fcat TO it_fcat.
+  CLEAR wa_fcat.
+
+  colno = colno + 1.
+  wa_fcat-col_pos   = colno.
+  wa_fcat-fieldname = 'MATNR'.
+  wa_fcat-seltext_l = 'MATERIAL.NUMBER'.
+  wa_fcat-tabname   = 'IT_PO'.
+  APPEND wa_fcat TO it_fcat.
+  CLEAR wa_fcat.
+
+  colno = colno + 1.
+  wa_fcat-col_pos   = colno.
+  wa_fcat-fieldname = 'MENGE'.
+  wa_fcat-do_sum    = 'X'.
+*    wa_fcat-edit    = 'X'.
+  wa_fcat-seltext_l = 'PURCHASE ORDER QUANTITY'.
+  wa_fcat-tabname   = 'IT_PO'.
+  APPEND wa_fcat TO it_fcat.
+  CLEAR wa_fcat.
+
+  colno = colno + 1.
+  wa_fcat-col_pos   = colno.
+  wa_fcat-fieldname = 'NETPR'.
+  wa_fcat-seltext_m = 'NET PRICE'.
+  wa_fcat-do_sum    = 'X'.
+  wa_fcat-currency  = 'INR'.
+  wa_fcat-tabname   = 'IT_PO'.
+  APPEND wa_fcat TO it_fcat.
+  CLEAR wa_fcat.
+
+** Sort on EBELN
+*  wa_sort-spos = '01' .
+*  wa_sort-fieldname = 'EBELN'.
+*  wa_sort-tabname = 'IT_PO'.
+**  wa_sort-up = 'X'.
+*  wa_sort-group     = 'UL'.
+*  wa_sort-subtot = 'X'.
+*  APPEND wa_sort TO it_sort .
+*  CLEAR wa_sort.
+*
+** Sort on EBELN
+*  wa_sort-spos = '01' .
+*  wa_sort-fieldname = 'LIFNR'.
+*  wa_sort-tabname = 'IT_LFA1'.
+*  wa_sort-up = 'X'.
+*  wa_sort-group     = 'UL'.
+*  wa_sort-subtot = 'X'.
+*  append wa_sort to it_sort .
+*  clear wa_sort.
+
+
+ENDFORM.                    " FIELD_CAT
+*&---------------------------------------------------------------------*
+*&      Form  EVENTS
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+*FORM events .
+*
+*  CALL FUNCTION 'REUSE_ALV_EVENTS_GET'
+*    EXPORTING
+*      i_list_type     = 0
+*    IMPORTING
+*      et_events       = it_event
+*    EXCEPTIONS
+*      list_type_wrong = 1
+*      OTHERS          = 2.
+*  IF sy-subrc = 0.
+*    READ TABLE it_event INTO wa_event WITH KEY name = 'TOP_OF_PAGE'.
+*    IF sy-subrc = 0.
+*      MOVE 'ZTOP_OF_PAGE' TO wa_event-form.
+*      MODIFY it_event FROM wa_event INDEX sy-tabix.
+*    ENDIF.
+**
+*    READ TABLE it_event INTO wa_event WITH KEY name = 'USER_COMMAND'.
+*    IF sy-subrc = 0.
+*      MOVE 'ZUSER_COMMAND' TO wa_event-form.
+*      MODIFY it_event FROM wa_event INDEX sy-tabix.
+*    ENDIF.
+*
+*    READ TABLE it_event INTO wa_event WITH KEY name = 'PF_STATUS_SET'.
+*    IF sy-subrc = 0.
+*      MOVE 'ZPF_STATUS_SET' TO wa_event-form.
+*      MODIFY it_event FROM wa_event INDEX sy-tabix.
+*    ENDIF.
+*
+*  ENDIF.
+*ENDFORM.                    " EVENTS
+*&---------------------------------------------------------------------*
+*&      Form  GRID_DISPLAY
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM grid_display .
+
+
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+   EXPORTING
+*   I_INTERFACE_CHECK                 = ' '
+*   I_BYPASSING_BUFFER                = ' '
+*   I_BUFFER_ACTIVE                   = ' '
+*     i_callback_program                = sy-repid
+*   I_CALLBACK_PF_STATUS_SET          = ' '
+*   I_CALLBACK_USER_COMMAND           = ' '
+*   I_CALLBACK_TOP_OF_PAGE            = ' '
+*   I_CALLBACK_HTML_TOP_OF_PAGE       = ' '
+*   I_CALLBACK_HTML_END_OF_LIST       = ' '
+*   I_STRUCTURE_NAME                  =
+*   I_BACKGROUND_ID                   = ' '
+*   I_GRID_TITLE                      =
+*   I_GRID_SETTINGS                   =
+*   is_layout                         = wa_layout
+   it_fieldcat                       = it_fcat
+*   IT_EXCLUDING                      =
+*   IT_SPECIAL_GROUPS                 =
+   it_sort                           = it_sort
+*   IT_FILTER                         =
+*   IS_SEL_HIDE                       =
+*   i_default                         = 'X'
+*   i_save                            = 'A'
+*   IS_VARIANT                        =
+*   it_events                         = it_event
+*   IT_EVENT_EXIT                     =
+*   IS_PRINT                          =
+*   IS_REPREP_ID                      =
+*   I_SCREEN_START_COLUMN             = 0
+*   I_SCREEN_START_LINE               = 0
+*   I_SCREEN_END_COLUMN               = 0
+*   I_SCREEN_END_LINE                 = 0
+*   I_HTML_HEIGHT_TOP                 = 0
+*   I_HTML_HEIGHT_END                 = 0
+*   IT_ALV_GRAPHICS                   =
+*   IT_HYPERLINK                      =
+*   it_add_fieldcat                   =
+*   IT_EXCEPT_QINFO                   =
+*   IR_SALV_FULLSCREEN_ADAPTER        =
+* IMPORTING
+*   E_EXIT_CAUSED_BY_CALLER           =
+*   ES_EXIT_CAUSED_BY_USER            =
+    TABLES
+      t_outtab                          =  it_po
+ EXCEPTIONS
+   program_error                     = 1
+   OTHERS                            = 2
+            .
+  IF sy-subrc <> 0.
+    MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+            WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+  ENDIF.
+ENDFORM.                    " GRID_DISPLAY
+*&---------------------------------------------------------------------*
+*&      Form  ZTOP_OF_PAGE
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+*FORM ztop_of_page .
+*  wa_listhead-typ  = 'H'.
+*  wa_listhead-info = 'ALV SIMPLE REPORT'.
+*  APPEND wa_listhead TO it_listhead.
+*  CLEAR: wa_listhead.
+*
+*  wa_listhead-typ  = 'S'.
+*  wa_listhead-key  = 'DATE:'.
+*  wa_listhead-info = sy-datum.
+*  APPEND wa_listhead TO it_listhead.
+*  CLEAR: wa_listhead.
+*
+*  wa_listhead-typ  = 'A'.
+*  wa_listhead-info = 'PO Details'.
+*  APPEND wa_listhead TO it_listhead.
+*  CLEAR: wa_listhead.
+*
+*  CALL FUNCTION 'REUSE_ALV_COMMENTARY_WRITE'
+*    EXPORTING
+*      it_list_commentary = it_listhead
+*      i_logo             = 'ABAP45'.
+*
+*  CLEAR: wa_listhead.
+*  REFRESH it_listhead.
+*ENDFORM.                    " ZTOP_OF_PAGE
+*&---------------------------------------------------------------------*
+*&      Form  FILL_LAYOUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+*FORM fill_layout .
+*  wa_layout-zebra = 'X'.
+*  wa_layout-colwidth_optimize = 'X'.
+*
+*ENDFORM.                    " FILL_LAYOUT
+
+*&---------------------------------------------------------------------*
+*&      Form  ZPF_STATUS_SET
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+*FORM zpf_status_set USING it_extab TYPE slis_t_extab.
+*
+*  SET PF-STATUS 'Z48_ALV' OF PROGRAM 'Z48_ALV_REPORT' EXCLUDING it_extab.
+*
+*ENDFORM.                    " ZPF_STATUS_SET
+
+*&---------------------------------------------------------------------*
+*&      Form  ZUSER_COMMAND
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+*FORM zuser_command USING  r_ucomm   TYPE sy-ucomm
+*                          wa_selfld TYPE slis_selfield.
+*
+*  IF wa_selfld-sel_tab_field = 'IT_PO-EBELN'.
+*    READ TABLE it_po INTO wa_po INDEX wa_selfld-tabindex.
+*    IF sy-subrc = 0.
+*      CASE r_ucomm.
+*
+*        WHEN '&IC1'.
+*          SET PARAMETER ID 'BES' FIELD wa_po-ebeln.
+*          CALL TRANSACTION 'ME23N' AND SKIP FIRST SCREEN.
+*      WHEN 'DISP'.
+*        SET PARAMETER ID 'BES' FIELD wa_po-ebeln.
+*        SUBMIT z46_alv_po_interactive AND RETURN.
+*      ENDCASE.
+*    ENDIF.
+*  ELSEIF wa_selfld-sel_tab_field = 'IT_PO-LIFNR'.
+*    READ TABLE it_po INTO wa_po INDEX wa_selfld-tabindex.
+*    IF sy-subrc = 0.
+*      CASE r_ucomm.
+*
+*        WHEN '&IC1' OR 'DISP'.
+*          SET PARAMETER ID 'LIF' FIELD wa_po-lifnr.
+*          CALL TRANSACTION 'XK03' AND SKIP FIRST SCREEN.
+*      ENDCASE.
+*    ENDIF.
+*  ENDIF.
+*
+*ENDFORM.                    " ZUSER_COMMAND

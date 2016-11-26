@@ -1,0 +1,150 @@
+*&---------------------------------------------------------------------*
+*& Report  Z48_SELECT_JOINS
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z48_select_joins.
+
+TYPES: BEGIN OF ty_final,
+          matnr TYPE matnr,
+          mtart TYPE mtart,
+          ntgew TYPE ntgew,
+          mbrsh TYPE mbrsh,
+          maktx TYPE maktx,
+          werks TYPE werks_d,
+          spras TYPE spras,
+        END OF ty_final.
+
+TYPES: BEGIN OF ty_mara,
+          matnr TYPE matnr,
+          mtart TYPE mtart,
+          ntgew TYPE ntgew,
+          mbrsh TYPE mbrsh,
+        END OF ty_mara.
+
+TYPES: BEGIN OF ty_makt,
+          matnr TYPE matnr,
+          maktx TYPE maktx,
+        END OF ty_makt.
+
+DATA: it_mara TYPE STANDARD TABLE OF ty_mara,
+      wa_mara TYPE ty_mara.
+DATA: it_makt TYPE STANDARD TABLE OF ty_makt,
+      wa_makt TYPE ty_makt.
+DATA: it_final TYPE STANDARD TABLE OF ty_final,
+      wa_final TYPE ty_final.
+
+FIELD-SYMBOLS <fi> TYPE ANY TABLE.
+
+DATA: v_matnr TYPE matnr,
+      v_line TYPE i.
+
+SELECT-OPTIONS: s_matnr FOR v_matnr,
+                s_mtart FOR wa_final-mtart NO-EXTENSION NO INTERVALS.
+
+PARAMETERS: p_ij TYPE c RADIOBUTTON GROUP g1,
+            p_oj TYPE c RADIOBUTTON GROUP g1,
+            p_fe TYPE c RADIOBUTTON GROUP g1.
+
+*&---------------------------------------------------------------------*
+*& INNER JOIN
+*&---------------------------------------------------------------------*
+
+IF p_ij = 'X'.
+  SELECT a~matnr
+         a~mtart
+         a~ntgew
+         a~mbrsh
+         k~maktx
+         c~werks
+         k~spras
+    INTO TABLE it_final
+      FROM mara AS a INNER JOIN makt AS k
+    ON a~matnr = k~matnr
+                 INNER JOIN marc AS c
+   ON a~matnr = c~matnr
+    WHERE a~matnr IN s_matnr
+      AND a~mtart IN s_mtart.
+*      AND k~spras = 'EN'.
+  ASSIGN it_final TO <fi>.
+*  LOOP AT it_final INTO wa_final.
+  LOOP AT <fi> INTO wa_final.
+    WRITE:/ wa_final-matnr,wa_final-mtart,wa_final-ntgew,
+            wa_final-mbrsh,wa_final-maktx. "wa_final-werks.
+  ENDLOOP.
+*&---------------------------------------------------------------------*
+*& LEFT OUTER JOIN
+*&---------------------------------------------------------------------*
+ELSEIF p_oj = 'X'.
+
+  SELECT a~matnr
+         a~mtart
+         a~ntgew
+         a~mbrsh
+         k~maktx
+         c~werks
+         k~spras
+    INTO TABLE it_final
+    FROM mara AS a LEFT OUTER JOIN makt AS k
+    ON a~matnr = k~matnr
+                 LEFT OUTER JOIN marc AS c
+   ON a~matnr = c~matnr
+    WHERE a~matnr IN s_matnr
+      AND a~mtart IN s_mtart.
+*      AND k~spras = 'EN'.
+
+*  DELETE it_final WHERE spras NE 'E'.
+  LOOP AT it_final INTO wa_final.
+    WRITE:/ wa_final-matnr,wa_final-mtart,wa_final-ntgew,
+            wa_final-mbrsh,wa_final-maktx, wa_final-werks.
+  ENDLOOP.
+*&---------------------------------------------------------------------*
+*& FOR ALL ENTRIES
+*&---------------------------------------------------------------------*
+ELSE.
+
+  SELECT matnr
+          mtart
+          ntgew
+          mbrsh FROM mara
+     INTO TABLE it_mara
+     WHERE matnr IN s_matnr
+       AND mtart IN s_mtart.
+
+  IF it_mara IS NOT INITIAL.
+
+    SELECT matnr
+           maktx
+      FROM makt
+      INTO TABLE it_makt
+      FOR ALL ENTRIES IN it_mara
+      WHERE matnr = it_mara-matnr
+        AND spras = 'EN'.
+
+    IF it_makt IS NOT INITIAL.
+
+      LOOP AT it_mara INTO wa_mara.
+        MOVE-CORRESPONDING wa_mara TO wa_final.
+
+        READ TABLE it_makt INTO wa_makt WITH KEY matnr = wa_mara-matnr.
+        IF sy-subrc = 0.
+          MOVE-CORRESPONDING wa_makt TO wa_final.
+*          APPEND wa_final TO it_final.
+*          WRITE:/ wa_final-matnr,wa_final-mtart,wa_final-ntgew,
+*                  wa_final-mbrsh,wa_final-maktx.
+*          CLEAR: wa_mara,wa_makt,wa_final.
+        ENDIF.
+        APPEND wa_final TO it_final.
+        WRITE:/ wa_final-matnr,wa_final-mtart,wa_final-ntgew,
+                wa_final-mbrsh,wa_final-maktx.
+        CLEAR: wa_mara,wa_makt,wa_final.
+      ENDLOOP.
+
+
+
+    ENDIF.
+  ENDIF.
+ENDIF.

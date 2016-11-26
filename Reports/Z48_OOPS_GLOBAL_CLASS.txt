@@ -1,0 +1,41 @@
+*&---------------------------------------------------------------------*
+*& Report  Z48_OOPS_GLOBAL_CLASS
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z48_oops_global_class.
+
+DATA: v_a TYPE i,
+      v_b TYPE i,
+      v_c TYPE i.
+
+START-OF-SELECTION.
+
+  DATA: obj TYPE REF TO zcl_48_demo.
+  CREATE OBJECT obj.
+
+  v_a = 2900.
+  v_b = 345.
+
+  CALL METHOD obj->add
+    EXPORTING
+      a = v_a
+      b = v_b
+    IMPORTING
+      c = v_c.
+
+
+  WRITE:/'Value of C', v_c.
+
+  CALL METHOD obj->sub
+    EXPORTING
+      a = v_a
+      b = v_b
+    IMPORTING
+      c = v_c.
+
+
+  WRITE:/'Value of C', v_c.

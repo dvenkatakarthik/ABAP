@@ -1,0 +1,203 @@
+*&---------------------------------------------------------------------*
+*& Report  Z48_CLASSICAL_REPORT
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z48_classical_report NO STANDARD PAGE HEADING
+                             LINE-COUNT 33(3)
+                             LINE-SIZE 72
+                             MESSAGE-ID z48_abap.
+
+
+INCLUDE z46_modularization_dd. " Data Declaration
+INCLUDE z46_modularization_ss. " selection screen
+
+*&---------------------------------------------------------------------*
+*& INITIALIZATION
+*&---------------------------------------------------------------------*
+INITIALIZATION.
+
+  p_date = sy-datum - 30.
+
+  s_matnr-sign  = 'I'.
+  s_matnr-option  = 'BT'.
+  s_matnr-low  = 'A'.
+  s_matnr-high  = 'B'.
+  APPEND s_matnr.
+
+*&---------------------------------------------------------------------*
+*& AT SELECTION-SCREEN
+*&---------------------------------------------------------------------*
+*AT SELECTION-SCREEN.
+AT SELECTION-SCREEN ON s_matnr.
+  IF s_matnr-low IS NOT INITIAL AND s_matnr-high IS INITIAL.
+    SELECT SINGLE matnr FROM mara INTO v_matnr
+               WHERE matnr = s_matnr-low.
+    IF sy-subrc NE 0.
+      MESSAGE e000 WITH 'Pls check the Material No'.
+    ENDIF.
+  ENDIF.
+
+AT SELECTION-SCREEN ON s_mtart.
+  IF s_mtart-low IS NOT INITIAL AND s_mtart-high IS INITIAL.
+    SELECT SINGLE mtart FROM mara INTO v_mtart
+              WHERE mtart = s_mtart-low.
+    IF sy-subrc NE 0.
+      MESSAGE e000 WITH 'Pls check the Material Type'.
+    ENDIF.
+  ENDIF.
+
+*&---------------------------------------------------------------------*
+*& INNER JOIN
+*&---------------------------------------------------------------------*
+START-OF-SELECTION.
+
+  IF p_ij = 'X'.
+    PERFORM inner_join.
+*&---------------------------------------------------------------------*
+*& LEFT OUTER JOIN
+*&---------------------------------------------------------------------*
+  ELSEIF p_oj = 'X'.
+    PERFORM outer_join.
+*&---------------------------------------------------------------------*
+*& FOR ALL ENTRIES
+*&---------------------------------------------------------------------*
+  ELSE.
+    PERFORM for_all_entries.
+  ENDIF.
+
+*&---------------------------------------------------------------------*
+*& END-OF-SELECTION
+*&---------------------------------------------------------------------*
+END-OF-SELECTION.
+
+  v_lines = 33 - sy-linno.
+  SKIP v_lines.
+
+*&---------------------------------------------------------------------*
+*& TOP-OF-PAGE
+*&---------------------------------------------------------------------*
+TOP-OF-PAGE.
+
+  WRITE:/ 'CLASSICAL REPORT FOR MATERIAL INFO' COLOR 6.
+  WRITE:/ 'Page No:', sy-pagno COLOR 5.
+  ULINE.
+*&---------------------------------------------------------------------*
+*& END-OF-PAGE
+*&---------------------------------------------------------------------*
+END-OF-PAGE.
+  WRITE:/ 'FOOTER INFO' COLOR 7.
+  WRITE:/ 'Page No:', sy-pagno.
+  WRITE:/ sy-uline.
+*&---------------------------------------------------------------------*
+*&      Form  INNER_JOIN
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM inner_join .
+
+  SELECT a~matnr
+          a~mtart
+          a~ntgew
+          a~mbrsh
+          k~maktx
+          c~werks
+          k~spras
+     INTO TABLE it_final
+     FROM mara AS a INNER JOIN makt AS k
+     ON a~matnr = k~matnr
+                    INNER JOIN marc AS c
+      ON a~matnr = c~matnr
+     WHERE a~matnr IN s_matnr
+       AND a~mtart IN s_mtart
+       AND k~spras = 'EN'.
+
+  LOOP AT it_final INTO wa_final.
+    WRITE:/ wa_final-matnr,wa_final-mtart,wa_final-ntgew,
+            wa_final-mbrsh,wa_final-maktx,wa_final-werks.
+  ENDLOOP.
+
+ENDFORM.                    " INNER_JOIN
+*&---------------------------------------------------------------------*
+*&      Form  OUTER_JOIN
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM outer_join .
+  SELECT a~matnr
+         a~mtart
+         a~ntgew
+         a~mbrsh
+         k~maktx
+         c~werks
+         k~spras
+    INTO TABLE it_final
+    FROM mara AS a LEFT OUTER JOIN makt AS k
+    ON a~matnr = k~matnr
+                   LEFT OUTER JOIN marc AS c
+     ON a~matnr = c~matnr
+    WHERE a~matnr IN s_matnr
+      AND a~mtart IN s_mtart.
+  DELETE it_final WHERE spras NE 'E'.
+
+  LOOP AT it_final INTO wa_final.
+    WRITE:/ wa_final-matnr,wa_final-mtart,wa_final-ntgew,
+            wa_final-mbrsh,wa_final-maktx,wa_final-werks.
+  ENDLOOP.
+ENDFORM.                    " OUTER_JOIN
+*&---------------------------------------------------------------------*
+*&      Form  FOR_ALL_ENTRIES
+*--------------------------------------------------------------------*
+*        text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM for_all_entries .
+  SELECT matnr
+          mtart
+          ntgew
+          mbrsh FROM mara
+     INTO TABLE it_mara
+     WHERE matnr IN s_matnr
+       AND mtart IN s_mtart.
+
+  IF it_mara IS NOT INITIAL.
+
+    SELECT matnr
+           maktx
+      FROM makt
+      INTO TABLE it_makt
+      FOR ALL ENTRIES IN it_mara
+      WHERE matnr = it_mara-matnr
+        AND spras = 'EN'.
+
+    IF it_makt IS NOT INITIAL.
+
+      LOOP AT it_mara INTO wa_mara.
+        MOVE-CORRESPONDING wa_mara TO wa_final.
+
+        READ TABLE it_makt INTO wa_makt WITH KEY matnr = wa_mara-matnr.
+        IF sy-subrc = 0.
+          MOVE-CORRESPONDING wa_makt TO wa_final.
+
+
+          APPEND wa_final TO it_final.
+          WRITE:/ wa_final-matnr,wa_final-mtart,wa_final-ntgew,
+                  wa_final-mbrsh,wa_final-maktx.
+        ENDIF.
+      ENDLOOP.
+
+
+    ENDIF.
+  ENDIF.
+ENDFORM.                    " FOR_ALL_ENTRIES

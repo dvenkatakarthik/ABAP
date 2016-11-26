@@ -1,0 +1,35 @@
+*&---------------------------------------------------------------------*
+*& Report  Z48_MESSAGES
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z48_messages MESSAGE-ID z48_abap.
+*                     NO STANDARD PAGE HEADING.
+
+DATA: v_res TYPE i.
+
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE text-001.
+PARAMETERS: p_num1 TYPE i,
+            p_num2 TYPE i.
+SELECTION-SCREEN END OF BLOCK b1.
+
+
+IF p_num1 = 0 AND
+   p_num2 = 0.
+
+*message e005(Z48_ABAP).
+*message s000(Z48_ABAP).
+*message w000(Z48_ABAP).
+*message i000(Z48_ABAP).
+*message a000(Z48_ABAP).
+*  MESSAGE s000(z48_abap) WITH text-002. "'Both Values should not be Zero'.
+  MESSAGE s000 WITH text-002.
+ELSE.
+  v_res = p_num1 + p_num2.
+  MESSAGE s000(z48_abap) WITH text-003. "'Output Displayed'.
+ENDIF.
+
+WRITE:/ text-003 color 4,/30 v_res COLOR 5.

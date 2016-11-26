@@ -1,0 +1,27 @@
+FUNCTION z48_fm_customer.
+*"----------------------------------------------------------------------
+*"*"Local Interface:
+*"  IMPORTING
+*"     REFERENCE(I_KUNNR) TYPE  KUNNR OPTIONAL
+*"  EXPORTING
+*"     REFERENCE(E_KUNNR) TYPE  KUNNR
+*"     REFERENCE(E_LAND1) TYPE  LAND1_GP
+*"     REFERENCE(E_NAME1) TYPE  NAME1_GP
+*"     REFERENCE(E_ORT01) TYPE  ORT01_GP
+*"     REFERENCE(E_TELF1) TYPE  TELF1
+*"  EXCEPTIONS
+*"      KUNNR_INVALID
+*"----------------------------------------------------------------------
+  SELECT SINGLE kunnr land1 name1 ort01 telf1
+    INTO (e_kunnr,e_land1,e_name1,e_ort01,e_telf1)
+     FROM kna1
+    WHERE kunnr = i_kunnr.
+
+  IF sy-subrc = 0.
+*    WRITE:/ e_kunnr,e_land1,e_name1,e_ort01,e_telf1.
+  ELSE.
+    RAISE kunnr_invalid.
+  ENDIF.
+
+
+ENDFUNCTION.

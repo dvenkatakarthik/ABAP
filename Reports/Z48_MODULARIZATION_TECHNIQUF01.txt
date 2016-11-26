@@ -1,0 +1,33 @@
+*----------------------------------------------------------------------*
+***INCLUDE Z48_MODULARIZATION_TECHNIQUF01 .
+*----------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Form  OUTER_JOIN
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM outer_join .
+  SELECT a~matnr
+             a~mtart
+             a~ntgew
+             a~mbrsh
+             k~maktx
+             c~werks
+             k~spras
+        INTO TABLE it_final
+        FROM mara AS a LEFT OUTER JOIN makt AS k
+        ON a~matnr = k~matnr
+                       LEFT OUTER JOIN marc AS c
+         ON a~matnr = c~matnr
+        WHERE a~matnr IN s_matnr
+          AND a~mtart IN s_mtart.
+  DELETE it_final WHERE spras NE 'E'.
+
+  LOOP AT it_final INTO wa_final.
+    WRITE:/ wa_final-matnr,wa_final-mtart,wa_final-ntgew,
+            wa_final-mbrsh,wa_final-maktx,wa_final-werks.
+  ENDLOOP.
+ENDFORM.                    " OUTER_JOIN
