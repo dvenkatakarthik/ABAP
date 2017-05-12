@@ -1,6 +1,6 @@
 FUNCTION z48_fm_customer.
 *"----------------------------------------------------------------------
-*"*"Local Interface:
+*"*"Local Interfa
 *"  IMPORTING
 *"     REFERENCE(I_KUNNR) TYPE  KUNNR OPTIONAL
 *"  EXPORTING
